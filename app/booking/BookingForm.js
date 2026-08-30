@@ -1,4 +1,181 @@
 "use client";
-import {useState} from "react";
-import {facialTreatments,bodyTreatments,facialAddons,bodyAddons,eyebrow} from "../../lib/services";
-export default function BookingForm(){const [data,setData]=useState({facial:"",body:"",eyebrow:false,date:"",start:"",name:"",email:"",notes:"",fa:[],ba:[]});const [msg,setMsg]=useState("");const services=[...facialTreatments,...bodyTreatments];const selected=[...services.filter(s=>s.id===data.facial||s.id===data.body),...(data.eyebrow?[eyebrow]:[])];const duration=selected.reduce((a,s)=>a+s.duration,0);const total=selected.reduce((a,s)=>a+s.price,0)+data.fa.reduce((a,id)=>a+(facialAddons.find(x=>x.id===id)?.price||0),0)+data.ba.reduce((a,id)=>a+(bodyAddons.find(x=>x.id===id)?.price||0),0);async function submit(e){e.preventDefault();setMsg("Checking availability and creating your booking…");const res=await fetch("/api/bookings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...data,duration,total})});const j=await res.json();setMsg(res.ok?`Your Appointment Is Confirmed ✨ — ${j.message}`:(j.error||"Unable to book this time."));}return <div className="bookingbox"><form className="form" onSubmit={submit}><label>Facial<select value={data.facial} onChange={e=>setData({...data,facial:e.target.value})}><option value="">None</option>{facialTreatments.map(s=><option value={s.id} key={s.id}>{s.name} — ${s.price}</option>)}</select></label><label>Body<select value={data.body} onChange={e=>setData({...data,body:e.target.value})}><option value="">None</option>{bodyTreatments.map(s=><option value={s.id} key={s.id}>{s.name} — ${s.price}</option>)}</select></label><label><span><input type="checkbox" checked={data.eyebrow} onChange={e=>setData({...data,eyebrow:e.target.checked})}/> Eyebrow Threading — $15 / 30 min</span></label>{data.facial&&<fieldset><legend>Facial Add-ons</legend>{facialAddons.map(a=><label key={a.id}><span><input type="checkbox" checked={data.fa.includes(a.id)} onChange={e=>setData({...data,fa:e.target.checked?[...data.fa,a.id]:data.fa.filter(x=>x!==a.id)})}/> {a.name} — ${a.price}</span></label>)}</fieldset>}{data.body&&<fieldset><legend>Enhance Your Body Treatment</legend>{bodyAddons.map(a=><label key={a.id}><span><input type="checkbox" checked={data.ba.includes(a.id)} onChange={e=>setData({...data,ba:e.target.checked?[...data.ba,a.id]:data.ba.filter(x=>x!==a.id)})}/> {a.name} — ${a.price}</span></label>)}</fieldset>}<div className="summary">Duration: {duration} min · Total: ${total}</div><label>Date<input type="date" required value={data.date} min={new Date().toISOString().slice(0,10)} onChange={e=>setData({...data,date:e.target.value})}/></label><label>Start time<input type="time" required value={data.start} min="08:00" max="19:00" step="900" onChange={e=>setData({...data,start:e.target.value})}/></label><label>Full Name<input required value={data.name} onChange={e=>setData({...data,name:e.target.value})}/></label><label>Email<input required type="email" value={data.email} onChange={e=>setData({...data,email:e.target.value})}/></label><label>Notes / Special Requests<textarea rows="4" value={data.notes} onChange={e=>setData({...data,notes:e.target.value})}/></label><p style={{color:"var(--muted)"}}>A minimum of 24 hours' notice is required for cancellations or appointment changes.</p><button className="btn" disabled={!selected.length}>Confirm Booking</button>{msg&&<div className={msg.includes("Confirmed")?"success":"error"}>{msg}</div>}</form></div>}
+import { useEffect, useMemo, useState } from "react";
+import { facialTreatments, bodyTreatments, facialAddons, bodyAddons, eyebrow } from "../../lib/services";
+
+const SLOT_MINUTES = 30;
+const OPEN_MINUTES = 8 * 60;
+const CLOSE_MINUTES = 19 * 60;
+const BUFFER_MINUTES = 30;
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function localIsoDate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function monthKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
+function labelTime(mins){ const h=Math.floor(mins/60), m=mins%60, suffix=h>=12?"PM":"AM", hh=h%12||12; return `${hh}:${pad(m)} ${suffix}`; }
+function serviceName(id){ return [...facialTreatments,...bodyTreatments,eyebrow].find(s=>s.id===id)?.name || ""; }
+
+function addMonths(date, amount){ return new Date(date.getFullYear(), date.getMonth()+amount, 1); }
+
+function Calendar({ value, onChange, minDate, duration }) {
+  const [month, setMonth] = useState(() => new Date(`${minDate}T12:00:00`));
+  const [unavailable, setUnavailable] = useState(new Set());
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/bookings?month=${monthKey(month)}&duration=${duration}`, { cache:"no-store" })
+      .then(async r => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || "availability");
+        return j;
+      })
+      .then(j => { if(!cancelled) setUnavailable(new Set(j.fullyBookedDates || [])); })
+      .catch(() => { if(!cancelled) setUnavailable(new Set()); })
+      .finally(() => { if(!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [month, duration]);
+
+  const cells = useMemo(() => {
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const start = new Date(first);
+    start.setDate(first.getDate() - first.getDay());
+    return Array.from({length:42}, (_,i) => {
+      const d = new Date(start); d.setDate(start.getDate()+i);
+      return d;
+    });
+  }, [month]);
+
+  const min = new Date(`${minDate}T00:00:00`);
+  const prevDisabled = addMonths(month,-1) < new Date(min.getFullYear(),min.getMonth(),1);
+
+  return <div className="calendar" aria-label="Appointment date picker">
+    <div className="calendarHead">
+      <button type="button" className="calendarNav" onClick={()=>setMonth(addMonths(month,-1))} disabled={prevDisabled} aria-label="Previous month">‹</button>
+      <strong>{month.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</strong>
+      <button type="button" className="calendarNav" onClick={()=>setMonth(addMonths(month,1))} aria-label="Next month">›</button>
+    </div>
+    <div className="calendarWeek">{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=><span key={d}>{d}</span>)}</div>
+    <div className="calendarGrid">
+      {cells.map(d=>{
+        const iso=localIsoDate(d);
+        const outside=d.getMonth()!==month.getMonth();
+        const tooEarly=d<min;
+        const full=unavailable.has(iso);
+        const disabled=outside||tooEarly||full||loading;
+        const selected=value===iso;
+        return <button key={iso} type="button" disabled={disabled} className={`calendarDay ${outside?"outside":""} ${full?"unavailable":""} ${selected?"selected":""}`} onClick={()=>onChange(iso)} aria-label={`${iso}${full?" unavailable":""}`}>
+          <span>{d.getDate()}</span>
+        </button>;
+      })}
+    </div>
+    <div className="calendarHint">{loading ? "Checking availability…" : "Choose an available date."}</div>
+  </div>;
+}
+
+export default function BookingForm({ initialData }) {
+  const [data,setData]=useState(initialData);
+  const [blocked,setBlocked]=useState([]);
+  const [loadingSlots,setLoadingSlots]=useState(false);
+  const [availabilityError,setAvailabilityError]=useState("");
+  const [msg,setMsg]=useState("");
+  const [submitted,setSubmitted]=useState(false);
+
+  const selected = useMemo(() => [
+    facialTreatments.find(s=>s.id===data.facial),
+    bodyTreatments.find(s=>s.id===data.body),
+    data.eyebrow ? eyebrow : null
+  ].filter(Boolean), [data.facial,data.body,data.eyebrow]);
+  const duration = selected.reduce((a,s)=>a+s.duration,0);
+  const total = selected.reduce((a,s)=>a+s.price,0)
+    + data.fa.reduce((a,id)=>a+(facialAddons.find(x=>x.id===id)?.price||0),0)
+    + data.ba.reduce((a,id)=>a+(bodyAddons.find(x=>x.id===id)?.price||0),0);
+
+  const minDate = useMemo(() => {
+    const d = new Date(); d.setHours(0,0,0,0); return localIsoDate(d);
+  }, []);
+
+  useEffect(() => {
+    if (!data.date || !duration) { setBlocked([]); setAvailabilityError(""); return; }
+    let cancelled=false;
+    setLoadingSlots(true); setAvailabilityError("");
+    fetch(`/api/bookings?date=${encodeURIComponent(data.date)}&duration=${duration}`, {cache:"no-store"})
+      .then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||"availability");return j;})
+      .then(j=>{
+        if(cancelled)return;
+        setBlocked(j.blocked||[]);
+        if(data.start && !(j.available||[]).includes(data.start)) setData(v=>({...v,start:""}));
+      })
+      .catch(()=>{ if(!cancelled) setAvailabilityError("We couldn't load the available times. Please try again."); })
+      .finally(()=>{if(!cancelled)setLoadingSlots(false);});
+    return ()=>{cancelled=true;};
+  }, [data.date,duration]);
+
+  const slots = useMemo(() => {
+    const out=[];
+    for(let start=OPEN_MINUTES; start+duration<=CLOSE_MINUTES; start+=SLOT_MINUTES){
+      const endWithBuffer=start+duration+BUFFER_MINUTES;
+      const conflict=blocked.some(b=>start<b.end_minutes && endWithBuffer>b.start_minutes);
+      out.push({minutes:start,value:`${pad(Math.floor(start/60))}:${pad(start%60)}`,disabled:conflict});
+    }
+    return out;
+  }, [blocked,duration]);
+
+  function set(key,value){ setData(v=>({...v,[key]:value})); setMsg(""); }
+  function toggleAddon(key,id,checked){ setData(v=>({...v,[key]:checked?[...v[key],id]:v[key].filter(x=>x!==id)})); }
+  function removeService(type){ setData(v=>({...v,[type]:type==="eyebrow"?false:"",...(type==="facial"?{fa:[]}:{}),...(type==="body"?{ba:[]}:{})})); }
+  function servicesQuery(){
+    const p=new URLSearchParams(); if(data.facial)p.set("facial",data.facial); if(data.body)p.set("body",data.body); if(data.eyebrow)p.set("eyebrow","1"); if(data.fa.length)p.set("fa",data.fa.join(",")); if(data.ba.length)p.set("ba",data.ba.join(",")); return p.toString();
+  }
+
+  async function submit(e){
+    e.preventDefault();
+    if(!selected.length || !data.date || !data.start || !data.name.trim() || !data.email.trim()) return;
+    setMsg("Checking availability and creating your booking…");
+    const res=await fetch("/api/bookings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...data,duration,total})});
+    const j=await res.json();
+    if(res.ok){ setSubmitted(true); setMsg(j.message || "Please check your email for your appointment confirmation and booking details."); }
+    else setMsg(j.error||"Unable to book this time.");
+  }
+
+  if(submitted) return <div className="success confirmationMessage"><h2>Booking confirmed ✨</h2><p>Please check your email for your appointment confirmation and booking details.</p><p className="muted">Your email contains your appointment details and your private link to cancel or change the appointment.</p></div>;
+
+  return <div className="bookingbox"><form className="form" onSubmit={submit}>
+    <div className="bookingIntro"><div className="eyebrow">Your Appointment</div><h2>Review your treatments</h2><p>Everything you selected is saved here. You can change or remove anything before choosing your appointment time.</p></div>
+
+    <div className="chosenServices">
+      {selected.length ? selected.map(s=><div className="chosenService" key={s.id}>
+        <div><strong>{s.name}</strong><span>${s.price} · {s.duration} min</span></div>
+        <div className="chosenActions"><a className="textButton" href={`/services?${servicesQuery()}`}>Change</a><button type="button" className="textButton dangerText" onClick={()=>removeService(s.id===eyebrow.id?"eyebrow":s.id===data.facial?"facial":"body")}>Remove</button></div>
+      </div>) : <p className="muted">No treatment selected. <a href="/services">Choose a service</a>.</p>}
+    </div>
+
+    {data.facial && <fieldset><legend>Facial Add-ons</legend>{facialAddons.map(a=><label key={a.id}><span><input type="checkbox" checked={data.fa.includes(a.id)} onChange={e=>toggleAddon("fa",a.id,e.target.checked)}/> {a.name} — ${a.price}</span></label>)}</fieldset>}
+    {data.body && <fieldset><legend>Body Add-ons</legend>{bodyAddons.map(a=><label key={a.id}><span><input type="checkbox" checked={data.ba.includes(a.id)} onChange={e=>toggleAddon("ba",a.id,e.target.checked)}/> {a.name} — ${a.price}</span></label>)}</fieldset>}
+
+    <div className="nextChoices">
+      <div><strong>Want to add another service?</strong><span className="muted">You can return to the menu at any time without losing your selections.</span></div>
+      <div className="choiceLinks">
+        {!data.facial && <a href={`/services?${servicesQuery()}`} className="choiceLink">+ Add a Facial</a>}
+        {!data.body && <a href={`/services?${servicesQuery()}`} className="choiceLink">+ Add a Body Treatment</a>}
+        {!data.eyebrow && <a href={`/services?${servicesQuery()}`} className="choiceLink">+ Add Eyebrow Threading</a>}
+      </div>
+    </div>
+
+    <div className="summary"><div>Appointment duration: <strong>{duration} min</strong></div><div>Total: <strong>${total}</strong></div></div>
+
+    <div className="availabilityPanel"><div className="availabilityTitle">Choose your appointment</div><p className="muted small">Select a date and then an available start time.</p></div>
+    <label>Date<Calendar value={data.date} minDate={minDate} duration={duration} onChange={v=>{set("date",v);set("start","");}} /></label>
+    <label>Start time<select required value={data.start} disabled={!data.date || loadingSlots || !selected.length} onChange={e=>set("start",e.target.value)}>
+      <option value="">{loadingSlots ? "Checking available times…" : data.date ? "Choose an available time" : "Choose a date first"}</option>
+      {slots.map(s=><option key={s.value} value={s.value} disabled={s.disabled}>{labelTime(s.minutes)}{s.disabled?" — Unavailable":""}</option>)}
+    </select></label>
+    {availabilityError && <div className="error">{availabilityError}</div>}
+
+    <label>Full Name<input required value={data.name} onChange={e=>set("name",e.target.value)} /></label>
+    <label>Email<input required type="email" value={data.email} onChange={e=>set("email",e.target.value)} /></label>
+    <label>Notes / Special Requests <span className="optionalLabel">(optional)</span><textarea rows="4" value={data.notes} onChange={e=>set("notes",e.target.value)} /></label>
+    <p className="muted">A minimum of 24 hours' notice is required for cancellations or appointment changes.</p>
+    <div className="bookingNav"><a className="backButton" href={`/services?${servicesQuery()}`}>← Back to Services</a><button type="submit" className="btn" disabled={!selected.length || !data.date || !data.start || !data.name.trim() || !data.email.trim() || !!availabilityError || loadingSlots}>Confirm Booking</button></div>
+    {msg&&<div className={msg.includes("Confirmed")||msg.includes("check your email")?"success":"error"}>{msg}</div>}
+  </form></div>;
+}
