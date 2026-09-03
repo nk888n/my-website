@@ -1,80 +1,12 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { facialTreatments, bodyTreatments, facialAddons, bodyAddons, eyebrow } from "../../lib/services";
-
-const SLOT_MINUTES = 30;
-const OPEN_MINUTES = 8 * 60;
-const CLOSE_MINUTES = 19 * 60;
-const BUFFER_MINUTES = 30;
-
-function pad(n){ return String(n).padStart(2,"0"); }
-function localIsoDate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function monthKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
-function labelTime(mins){ const h=Math.floor(mins/60), m=mins%60, suffix=h>=12?"PM":"AM", hh=h%12||12; return `${hh}:${pad(m)} ${suffix}`; }
-function serviceName(id){ return [...facialTreatments,...bodyTreatments,eyebrow].find(s=>s.id===id)?.name || ""; }
-
-function addMonths(date, amount){ return new Date(date.getFullYear(), date.getMonth()+amount, 1); }
-
-function Calendar({ value, onChange, minDate, duration }) {
-  const [month, setMonth] = useState(() => new Date(`${minDate}T12:00:00`));
-  const [unavailable, setUnavailable] = useState(new Set());
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`/api/bookings?month=${monthKey(month)}&duration=${duration}`, { cache:"no-store" })
-      .then(async r => {
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error || "availability");
-        return j;
-      })
-      .then(j => { if(!cancelled) setUnavailable(new Set(j.fullyBookedDates || [])); })
-      .catch(() => { if(!cancelled) setUnavailable(new Set()); })
-      .finally(() => { if(!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [month, duration]);
-
-  const cells = useMemo(() => {
-    const first = new Date(month.getFullYear(), month.getMonth(), 1);
-    const start = new Date(first);
-    start.setDate(first.getDate() - first.getDay());
-    return Array.from({length:42}, (_,i) => {
-      const d = new Date(start); d.setDate(start.getDate()+i);
-      return d;
-    });
-  }, [month]);
-
-  const min = new Date(`${minDate}T00:00:00`);
-  const prevDisabled = addMonths(month,-1) < new Date(min.getFullYear(),min.getMonth(),1);
-
-  return <div className="calendar" aria-label="Appointment date picker">
-    <div className="calendarHead">
-      <button type="button" className="calendarNav" onClick={()=>setMonth(addMonths(month,-1))} disabled={prevDisabled} aria-label="Previous month">‹</button>
-      <strong>{month.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</strong>
-      <button type="button" className="calendarNav" onClick={()=>setMonth(addMonths(month,1))} aria-label="Next month">›</button>
-    </div>
-    <div className="calendarWeek">{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=><span key={d}>{d}</span>)}</div>
-    <div className="calendarGrid">
-      {cells.map(d=>{
-        const iso=localIsoDate(d);
-        const outside=d.getMonth()!==month.getMonth();
-        const tooEarly=d<min;
-        const full=unavailable.has(iso);
-        const disabled=outside||tooEarly||full||loading;
-        const selected=value===iso;
-        return <button key={iso} type="button" disabled={disabled} className={`calendarDay ${outside?"outside":""} ${full?"unavailable":""} ${selected?"selected":""}`} onClick={()=>onChange(iso)} aria-label={`${iso}${full?" unavailable":""}`}>
-          <span>{d.getDate()}</span>
-        </button>;
-      })}
-    </div>
-    <div className="calendarHint">{loading ? "Checking availability…" : "Choose an available date."}</div>
-  </div>;
-}
+import { Calendar, TimeSlots, localIsoDate } from "../components/AppointmentPicker";
 
 export default function BookingForm({ initialData }) {
   const [data,setData]=useState(initialData);
   const [blocked,setBlocked]=useState([]);
+  const [available,setAvailable]=useState([]);
   const [loadingSlots,setLoadingSlots]=useState(false);
   const [availabilityError,setAvailabilityError]=useState("");
   const [msg,setMsg]=useState("");
@@ -90,12 +22,10 @@ export default function BookingForm({ initialData }) {
     + data.fa.reduce((a,id)=>a+(facialAddons.find(x=>x.id===id)?.price||0),0)
     + data.ba.reduce((a,id)=>a+(bodyAddons.find(x=>x.id===id)?.price||0),0);
 
-  const minDate = useMemo(() => {
-    const d = new Date(); d.setHours(0,0,0,0); return localIsoDate(d);
-  }, []);
+  const minDate = useMemo(() => localIsoDate(new Date()), []);
 
   useEffect(() => {
-    if (!data.date || !duration) { setBlocked([]); setAvailabilityError(""); return; }
+    if (!data.date || !duration) { setBlocked([]); setAvailable([]); setAvailabilityError(""); return; }
     let cancelled=false;
     setLoadingSlots(true); setAvailabilityError("");
     fetch(`/api/bookings?date=${encodeURIComponent(data.date)}&duration=${duration}`, {cache:"no-store"})
@@ -103,6 +33,7 @@ export default function BookingForm({ initialData }) {
       .then(j=>{
         if(cancelled)return;
         setBlocked(j.blocked||[]);
+        setAvailable(j.available||[]);
         if(data.start && !(j.available||[]).includes(data.start)) setData(v=>({...v,start:""}));
       })
       .catch(()=>{ if(!cancelled) setAvailabilityError("We couldn't load the available times. Please try again."); })
@@ -110,15 +41,6 @@ export default function BookingForm({ initialData }) {
     return ()=>{cancelled=true;};
   }, [data.date,duration]);
 
-  const slots = useMemo(() => {
-    const out=[];
-    for(let start=OPEN_MINUTES; start+duration+BUFFER_MINUTES<=CLOSE_MINUTES; start+=SLOT_MINUTES){
-      const endWithBuffer=start+duration+BUFFER_MINUTES;
-      const conflict=blocked.some(b=>start<b.end_minutes && endWithBuffer>b.start_minutes);
-      out.push({minutes:start,value:`${pad(Math.floor(start/60))}:${pad(start%60)}`,disabled:conflict});
-    }
-    return out;
-  }, [blocked,duration]);
 
   function set(key,value){ setData(v=>({...v,[key]:value})); setMsg(""); }
   function toggleAddon(key,id,checked){ setData(v=>({...v,[key]:checked?[...v[key],id]:v[key].filter(x=>x!==id)})); }
@@ -165,10 +87,7 @@ export default function BookingForm({ initialData }) {
 
     <div className="availabilityPanel"><div className="availabilityTitle">Choose your appointment</div><p className="muted small">Select a date and then an available start time.</p></div>
     <label>Date<Calendar value={data.date} minDate={minDate} duration={duration} onChange={v=>{set("date",v);set("start","");}} /></label>
-    <label>Start time<select required value={data.start} disabled={!data.date || loadingSlots || !selected.length} onChange={e=>set("start",e.target.value)}>
-      <option value="">{loadingSlots ? "Checking available times…" : data.date ? "Choose an available time" : "Choose a date first"}</option>
-      {slots.map(s=><option key={s.value} value={s.value} disabled={s.disabled}>{labelTime(s.minutes)}{s.disabled?" — Unavailable":""}</option>)}
-    </select></label>
+    <div className="timePickerField"><div className="fieldLabel">Start time</div>{data.date ? <TimeSlots date={data.date} duration={duration} selected={data.start} onChange={v=>set("start",v)} blocked={blocked} available={available} loading={loadingSlots}/> : <p className="muted small">Choose a date first.</p>}</div>
     {availabilityError && <div className="error">{availabilityError}</div>}
 
     <label>Full Name<input required value={data.name} onChange={e=>set("name",e.target.value)} /></label>

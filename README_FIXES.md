@@ -1,21 +1,29 @@
-# Vale Beauty VK – current fixes
+# VALE BEAUTY VK – booking + policy upgrade
 
-This package contains the current fixes for the four issues reported during testing:
+## Included
+- 12-hour appointment times (8:00 AM, 8:30 AM, …) instead of 24-hour labels.
+- Booking date picker and manage-appointment date picker use the compact custom calendar instead of the browser's native date input.
+- Fully booked dates are greyed out.
+- Booked/unavailable time slots are visibly faded/disabled.
+- Business hours remain 8:00 AM–7:00 PM every day. Because every appointment also has a 30-minute cleanup buffer, the latest start time depends on the service duration.
+- The customer management link is usable until 24 hours before the appointment. After that, customer self-service change/cancel is disabled.
+- A late cancellation/change within 24 hours can create an outstanding fee when `LATE_FEE_AMOUNT` is configured.
+- The admin page can mark a customer as Attended or No-show, and can add a manually entered fee for a no-show or late cancellation.
+- Outstanding fees block a new booking from the same email and show the customer the amount owed.
+- Admin can mark outstanding fees as paid or waive them.
+- Confirmation and appointment-update emails use Gmail SMTP through `GMAIL_USER` + `GMAIL_APP_PASSWORD`.
 
-1. Service detail panels no longer stretch other cards; each service keeps its own open/closed state.
-2. The booking calendar is compact so the month view does not create a large vertical box.
-3. Availability uses 30-minute start slots, 8:00 AM–7:00 PM business hours, and includes the private 30-minute cleanup buffer when calculating whether a slot can be booked. The latest start therefore depends on the selected service duration (for example, a 30-minute service can start at 6:00 PM because its 30-minute buffer ends at 7:00 PM).
-4. Confirm Booking becomes enabled when a service, available date/time, full name, and valid email are present. Notes remain optional.
+## Supabase migration
+Run `supabase-policy-upgrade.sql` once in the Supabase SQL Editor. It expands booking status values to support attendance/no-show/late-cancellation tracking.
 
-## Important deployment requirement
-
-The availability and booking API requires the Supabase environment variables from `.env.example` to be configured in the deployment environment:
-
+## Vercel
+Keep these Production variables configured:
+- `GMAIL_USER`
+- `GMAIL_APP_PASSWORD`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `RESEND_API_KEY`
+- `ADMIN_PIN`
 - `NEXT_PUBLIC_SITE_URL`
 - `BUSINESS_TIMEZONE`
-- `RESEND_FROM_EMAIL`
 
-If the deployed site still shows an availability-load error after these code changes, verify those Vercel environment variables and that the Supabase schema in `supabase-schema.sql` has been applied.
+Set `LATE_FEE_AMOUNT` only after the studio decides the actual fee amount. Do not invent a fee amount in the code.
