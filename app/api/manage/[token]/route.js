@@ -21,9 +21,9 @@ export async function POST(req,{params}){
   const amount=Number(process.env.LATE_FEE_AMOUNT||0);
   async function addLateFee(reason){
     if(amount<=0)return false;
-    const {data:existing,error:ee}=await c.from("fees").select("id").eq("booking_id",b.id).eq("status","outstanding").limit(1);if(ee)throw ee;
+    const {data:existing,error:ee}=await c.from("customer_fees").select("id").eq("booking_id",b.id).eq("status","outstanding").limit(1);if(ee)throw ee;
     if(existing?.length)return true;
-    const {error:fe}=await c.from("fees").insert({email:b.email,booking_id:b.id,amount,reason,status:"outstanding"});if(fe)throw fe;
+    const {error:fe}=await c.from("customer_fees").insert({email:b.email,booking_id:b.id,amount,reason,status:"outstanding"});if(fe)throw fe;
     return true;
   }
   if(body.action==="cancel"){

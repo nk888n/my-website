@@ -1,42 +1,73 @@
 import {NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
+import {DateTime} from "luxon";
+import {sendMail} from "../../../lib/mailer";
+import {business} from "../../../lib/services";
 const db=()=>createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
-function ok(req){return req.headers.get("x-admin-pin")===process.env.ADMIN_PIN}
+const ok=req=>req.headers.get("x-admin-pin")===process.env.ADMIN_PIN;
+const safe=(v="")=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function audit(c,action,entity_type,entity_id,email,details={}){await c.from("admin_audit_log").insert({action,entity_type,entity_id:String(entity_id||""),email:email||null,details});}
+function customersFrom(bookings,fees,discounts){const m=new Map();for(const b of bookings){const e=b.email;const x=m.get(e)||{email:e,name:b.name,bookings:0,attended:0,noShows:0,lateCancels:0,totalSpent:0};x.bookings++;if(b.status==="attended")x.attended++;if(b.status==="no_show")x.noShows++;if(b.status==="late_cancel")x.lateCancels++;if(["confirmed","attended"].includes(b.status))x.totalSpent+=Number(b.total_price||0);x.name=b.name;m.set(e,x)}for(const f of fees){const x=m.get(f.email)||{email:f.email,name:f.email,bookings:0,attended:0,noShows:0,lateCancels:0,totalSpent:0};x.outstanding=(x.outstanding||0)+(f.status==="outstanding"?Number(f.amount):0);m.set(f.email,x)}for(const d of discounts){const x=m.get(d.email)||{email:d.email,name:d.email,bookings:0,attended:0,noShows:0,lateCancels:0,totalSpent:0};x.discount=d;m.set(d.email,x)}return [...m.values()].sort((a,b)=>b.bookings-a.bookings)}
 export async function GET(req){
  if(!ok(req))return NextResponse.json({error:"Access denied"},{status:403});
- const c=db();const {data,error}=await c.from("bookings").select("id,date,start_minutes,name,email,notes,duration_minutes,total_price,status,created_at,updated_at").order("date",{ascending:true}).order("start_minutes",{ascending:true});
- if(error)return NextResponse.json({error:"Database error"},{status:500});
- const {data:fees}=await c.from("fees").select("id,email,booking_id,amount,reason,status,created_at").order("created_at",{ascending:false});
- return NextResponse.json({bookings:data||[],fees:fees||[]});
+ try{const c=db();
+  const [br,fr,cr,dr,er,wr,mr,ar]=await Promise.all([
+   c.from("bookings").select("id,date,start_minutes,name,email,notes,duration_minutes,total_price,subtotal_price,discount_amount,status,created_at,updated_at,items").order("date",{ascending:true}).order("start_minutes",{ascending:true}),
+   c.from("fees").select("id,email,booking_id,amount,reason,status,created_at"),
+   c.from("customer_fees").select("id,email,booking_id,amount,reason,status,admin_note,created_at,resolved_at"),
+   c.from("customer_discounts").select("id,email,kind,value,starts_at,expires_at,max_uses,uses,active,note,created_at").order("created_at",{ascending:false}),
+   c.from("availability_exceptions").select("id,start_at,end_at,kind,reason,created_at").order("start_at",{ascending:true}),
+   c.from("waitlist").select("id,name,email,date,preferred_start_minutes,duration_minutes,notes,status,created_at").order("date",{ascending:true}),
+   c.from("message_log").select("id,subject,sent_count,created_at").order("created_at",{ascending:false}).limit(30),
+   c.from("admin_audit_log").select("id,action,entity_type,entity_id,email,details,created_at").order("created_at",{ascending:false}).limit(100)
+  ]);
+  const err=[br,fr,cr,dr,er,wr,mr,ar].find(x=>x.error && x.error.code!=="42P01");if(err)throw err.error;
+  const bookings=br.data||[], fees=[...(fr.data||[]),...(cr.data||[])];const discounts=dr.data||[];
+  const today=DateTime.now().setZone(business.timezone).toISODate();
+  const todayBookings=bookings.filter(b=>b.date===today);
+  const stats={today:todayBookings.filter(b=>b.status==="confirmed").length,upcoming:bookings.filter(b=>b.status==="confirmed"&&b.date>=today).length,attended:bookings.filter(b=>b.status==="attended").length,noShows:bookings.filter(b=>b.status==="no_show").length,outstanding:fees.filter(f=>f.status==="outstanding").reduce((s,f)=>s+Number(f.amount),0),customers:customersFrom(bookings,fees,discounts).length};
+  return NextResponse.json({bookings,fees,discounts,exceptions:er.data||[],waitlist:wr.data||[],messages:mr.data||[],audit:ar.data||[],customers:customersFrom(bookings,fees,discounts),stats});
+ }catch(e){console.error(e);return NextResponse.json({error:"Database error. Run the admin Supabase migration first."},{status:500})}
 }
 export async function POST(req){
  if(!ok(req))return NextResponse.json({error:"Access denied"},{status:403});
- try{
-  const body=await req.json();const id=String(body.id||"");const action=String(body.action||"");if(!id)return NextResponse.json({error:"Booking id is required."},{status:400});
-  const c=db();const {data:b,error:be}=await c.from("bookings").select("id,email,status").eq("id",id).maybeSingle();if(be)throw be;if(!b)return NextResponse.json({error:"Booking not found."},{status:404});
-  if(action==="attended"){
-    const {error}=await c.from("bookings").update({status:"attended",updated_at:new Date().toISOString()}).eq("id",id);if(error)throw error;return NextResponse.json({message:"Appointment marked as attended."});
+ try{const body=await req.json();const action=String(body.action||"");const c=db();
+  if(action==="attended"||action==="no_show"||action==="late_cancel"||action==="cancel"){
+   const id=String(body.id||"");const {data:b,error}=await c.from("bookings").select("*").eq("id",id).maybeSingle();if(error)throw error;if(!b)return NextResponse.json({error:"Booking not found."},{status:404});
+   if(action==="attended"){await c.from("bookings").update({status:"attended",updated_at:new Date().toISOString()}).eq("id",id);await audit(c,"mark_attended","booking",id,b.email,{});return NextResponse.json({message:"Appointment marked as attended."});}
+   if(action==="cancel"){await c.from("bookings").update({status:"cancelled",updated_at:new Date().toISOString()}).eq("id",id);await audit(c,"cancel_booking","booking",id,b.email,{reason:body.reason||"Admin cancellation"});if(body.notify!==false){await sendMail({to:b.email,subject:`Appointment Cancelled — ${business.name}`,html:`<h2>Your Appointment Has Been Cancelled</h2><p>Hi ${safe(b.name)},</p><p>Your appointment on <b>${safe(b.date)}</b> at <b>${safe(body.startLabel||String(b.start_minutes))}</b> has been cancelled by the studio.</p><p>${safe(body.reason||"Please contact the studio if you have questions.")}</p><p>${business.email}<br>${business.phone}</p>`});}return NextResponse.json({message:"Appointment cancelled."});}
+   const amount=Number(body.amount);if(!Number.isFinite(amount)||amount<=0)return NextResponse.json({error:"Enter a valid fee amount."},{status:400});
+   const status=action==="no_show"?"no_show":"late_cancel", reason=action==="no_show"?"No-show":"Late cancellation";
+   await c.from("bookings").update({status,updated_at:new Date().toISOString()}).eq("id",id);
+   const {error:fe}=await c.from("customer_fees").insert({email:b.email,booking_id:id,amount,reason,admin_note:body.note||null,status:"outstanding"});if(fe)throw fe;
+   await audit(c,action,"booking",id,b.email,{amount,reason,note:body.note||null});return NextResponse.json({message:`${reason} recorded and $${amount.toFixed(2)} fee added.`});
   }
-  if(action==="no_show"){
-    const amount=Number(body.amount);if(!Number.isFinite(amount)||amount<=0)return NextResponse.json({error:"Enter the fee amount first."},{status:400});
-    const {error}=await c.from("bookings").update({status:"no_show",updated_at:new Date().toISOString()}).eq("id",id);if(error)throw error;
-    const {error:fe}=await c.from("fees").insert({email:b.email,booking_id:id,amount,reason:"No-show",status:"outstanding"});if(fe)throw fe;
-    return NextResponse.json({message:`Marked as no-show and added an outstanding fee of $${amount.toFixed(2)}.`});
+  if(action==="fee"){
+   const {error}=await c.from("customer_fees").insert({email:String(body.email).trim().toLowerCase(),booking_id:body.bookingId||null,amount:Number(body.amount),reason:String(body.reason||"Admin fee"),admin_note:body.note||null,status:"outstanding"});if(error)throw error;await audit(c,"add_fee","customer",body.email,body.email,{amount:body.amount,reason:body.reason});return NextResponse.json({message:"Fee added."});
   }
-  if(action==="late_cancel"){
-    const amount=Number(body.amount);if(!Number.isFinite(amount)||amount<=0)return NextResponse.json({error:"Enter the fee amount first."},{status:400});
-    const {error}=await c.from("bookings").update({status:"late_cancel",updated_at:new Date().toISOString()}).eq("id",id);if(error)throw error;
-    const {error:fe}=await c.from("fees").insert({email:b.email,booking_id:id,amount,reason:"Late cancellation",status:"outstanding"});if(fe)throw fe;
-    return NextResponse.json({message:`Marked as late cancellation and added an outstanding fee of $${amount.toFixed(2)}.`});
+  if(action==="mark_paid"||action==="waive_fee"){
+   const id=String(body.feeId||"");const status=action==="mark_paid"?"paid":"waived";const {data:f,error}=await c.from("customer_fees").select("*").eq("id",id).maybeSingle();if(error)throw error;if(!f)return NextResponse.json({error:"Fee not found."},{status:404});
+   await c.from("customer_fees").update({status,resolved_at:new Date().toISOString(),admin_note:body.note||f.admin_note}).eq("id",id);await audit(c,action,"fee",id,f.email,{amount:f.amount,note:body.note||null});return NextResponse.json({message:status==="waived"?"Fee waived and recorded in the history.":"Fee marked as paid."});
   }
-  if(action==="waive_fee"){
-    const feeId=String(body.feeId||"");if(!feeId)return NextResponse.json({error:"Fee id is required."},{status:400});
-    const {error}=await c.from("fees").update({status:"waived"}).eq("id",feeId);if(error)throw error;return NextResponse.json({message:"Fee waived."});
+  if(action==="discount"){
+   const email=String(body.email||"").trim().toLowerCase();const kind=body.kind==="fixed"?"fixed":"percent";const value=Number(body.value);if(!email||!Number.isFinite(value)||value<=0)return NextResponse.json({error:"Enter customer, discount and value."},{status:400});
+   const row={email,kind,value,starts_at:body.startsAt?new Date(body.startsAt).toISOString():new Date().toISOString(),expires_at:body.expiresAt?new Date(body.expiresAt).toISOString():null,max_uses:body.maxUses?Number(body.maxUses):null,note:body.note||null,active:true};const {data:d,error}=await c.from("customer_discounts").insert(row).select().single();if(error)throw error;
+   await audit(c,"add_discount","customer_discount",d.id,email,row);
+   if(body.notify!==false){const valueText=kind==="percent"?`${value}%`:`$${value.toFixed(2)}`;await sendMail({to:email,subject:`A Special Offer From ${business.name} ✨`,html:`<h2>You Have a Special Offer ✨</h2><p>Hi,</p><p><b>${safe(valueText)} off</b> is now available for your next appointment at ${business.name}.</p><p>Your discount will be applied automatically when you book using this email address.</p>${row.expires_at?`<p>Valid until ${safe(new Date(row.expires_at).toLocaleDateString())}.</p>`:""}<p>When you book, your confirmation will show the price before and after your discount.</p>`});}
+   return NextResponse.json({message:"Discount activated and customer notified."});
   }
-  if(action==="mark_paid"){
-    const feeId=String(body.feeId||"");if(!feeId)return NextResponse.json({error:"Fee id is required."},{status:400});
-    const {error}=await c.from("fees").update({status:"paid"}).eq("id",feeId);if(error)throw error;return NextResponse.json({message:"Fee marked as paid."});
+  if(action==="discount_toggle"){const id=String(body.id||"");const {data:d}=await c.from("customer_discounts").select("*").eq("id",id).maybeSingle();if(!d)return NextResponse.json({error:"Discount not found."},{status:404});await c.from("customer_discounts").update({active:!d.active}).eq("id",id);await audit(c,"toggle_discount","customer_discount",id,d.email,{active:!d.active});return NextResponse.json({message:!d.active?"Discount activated.":"Discount deactivated."});}
+  if(action==="block"){
+   const start=DateTime.fromISO(String(body.start),{zone:business.timezone}),end=DateTime.fromISO(String(body.end),{zone:business.timezone});if(!start.isValid||!end.isValid||end<=start)return NextResponse.json({error:"Choose a valid start and end time."},{status:400});
+   const {data:overlap}=await c.from("bookings").select("id,name,email,date,start_minutes,duration_minutes,status").eq("status","confirmed").lt("start_at",end.toUTC().toISO()).gt("blocked_end_at",start.toUTC().toISO());if(overlap?.length)return NextResponse.json({error:`This block overlaps ${overlap.length} existing confirmed appointment(s). Reschedule/cancel them first.`},{status:409});
+   const {data:x,error}=await c.from("availability_exceptions").insert({start_at:start.toUTC().toISO(),end_at:end.toUTC().toISO(),kind:body.kind||"custom",reason:body.reason||null}).select().single();if(error)throw error;await audit(c,"block_availability","exception",x.id,null,{start:x.start_at,end:x.end_at,kind:x.kind,reason:x.reason});return NextResponse.json({message:"Availability blocked.",exception:x});
+  }
+  if(action==="unblock"){const id=String(body.id||"");await c.from("availability_exceptions").delete().eq("id",id);await audit(c,"unblock_availability","exception",id,null,{});return NextResponse.json({message:"Availability block removed."});}
+  if(action==="message"){
+   const recipients=Array.isArray(body.recipients)?body.recipients.map(x=>String(x).trim().toLowerCase()).filter(Boolean):[];const subject=String(body.subject||"").trim(),text=String(body.message||"").trim();if(!recipients.length||!subject||!text)return NextResponse.json({error:"Choose recipients and enter a subject and message."},{status:400});
+   let sent=0;for(const email of recipients){try{await sendMail({to:email,subject,html:`<div style="font-family:Arial,sans-serif"><h2>${safe(subject)}</h2><p>${safe(text).replace(/\n/g,"<br>")}</p><p>${business.name}<br>${business.email}<br>${business.phone}</p></div>`});sent++;}catch(e){console.error(e)}}
+   const {data:m,error}=await c.from("message_log").insert({subject,body:text,recipients,sent_count:sent}).select().single();if(error)throw error;await audit(c,"send_message","message",m.id,null,{sentCount:sent,recipients});return NextResponse.json({message:`Message sent to ${sent} of ${recipients.length} selected customers.`});
   }
   return NextResponse.json({error:"Unsupported action."},{status:400});
- }catch(e){console.error(e);return NextResponse.json({error:"Admin action failed."},{status:500})}
+ }catch(e){console.error(e);return NextResponse.json({error:"Admin action failed. Check that the admin Supabase migration has been run."},{status:500})}
 }

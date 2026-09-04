@@ -10,6 +10,13 @@ const CLOSE_MINUTES=1140;
 const SLOT_MINUTES=30;
 const BUFFER_MINUTES=30;
 const db=()=>createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
+async function exceptionBlocks(client,date){
+  const dayStart=DateTime.fromISO(`${date}T00:00:00`,{zone:business.timezone}).toUTC().toISO();
+  const dayEnd=DateTime.fromISO(`${date}T23:59:59`,{zone:business.timezone}).toUTC().toISO();
+  const {data,error}=await client.from("availability_exceptions").select("start_at,end_at,kind,reason").lt("start_at",dayEnd).gt("end_at",dayStart);
+  if(error && error.code!=="42P01") throw error;
+  return (data||[]).map(x=>{const a=DateTime.fromISO(x.start_at).setZone(business.timezone);const z=DateTime.fromISO(x.end_at).setZone(business.timezone);return {start_minutes:a.hour*60+a.minute,end_minutes:z.hour*60+z.minute};});
+}
 function mins(t){const [h,m]=String(t).split(":").map(Number);return h*60+m}
 function slotAvailability(blocked,duration,date){
   const now=DateTime.now().setZone(business.timezone);
@@ -43,7 +50,7 @@ export async function GET(req){
       const arr=grouped.get(b.date)||[]; arr.push({start_minutes:start,end_minutes:end}); grouped.set(b.date,arr);
     }
     if(date){
-      const blocked=grouped.get(date)||[];
+      const blocked=[...(grouped.get(date)||[]),...(await exceptionBlocks(client,date))];
       return NextResponse.json({blocked,available:slotAvailability(blocked,duration,date)});
     }
     const fullyBookedDates=[];
@@ -51,7 +58,7 @@ export async function GET(req){
     const days=first.daysInMonth;
     for(let d=1;d<=days;d++){
       const iso=first.set({day:d}).toISODate();
-      if(!slotAvailability(grouped.get(iso)||[],duration,iso).length) fullyBookedDates.push(iso);
+      const blocks=[...(grouped.get(iso)||[]),...(await exceptionBlocks(client,iso))]; if(!slotAvailability(blocks,duration,iso).length) fullyBookedDates.push(iso);
     }
     return NextResponse.json({fullyBookedDates});
   }catch(e){
@@ -78,25 +85,36 @@ export async function POST(req){
     const end=local.plus({minutes:duration});
     const blocked=end.plus({minutes:BUFFER_MINUTES});
     const client=db();
+    const exceptions=await exceptionBlocks(client,b.date);
+    if(exceptions.some(x=>start<x.end_minutes && start+duration+BUFFER_MINUTES>x.start_minutes)) return NextResponse.json({error:"This time is unavailable. Please choose another time."},{status:409});
     const normalizedEmail=b.email.trim().toLowerCase();
-    const {data:fees}=await client.from("fees").select("amount,reason").eq("status","outstanding").ilike("email",normalizedEmail);
-    if(fees?.length){
-      const amount=fees.reduce((x,f)=>x+Number(f.amount),0);
-      return NextResponse.json({error:`There is an outstanding fee of $${amount.toFixed(2)} on this email because of a late cancellation or no-show. Please contact VALE BEAUTY VK before booking another appointment.`},{status:409});
-    }
+    const feeResults=await Promise.all([
+      client.from("fees").select("amount,reason").eq("status","outstanding").ilike("email",normalizedEmail),
+      client.from("customer_fees").select("amount,reason").eq("status","outstanding").ilike("email",normalizedEmail)
+    ]);
+    const fees=[...(feeResults[0].data||[]),...(feeResults[1].data||[])];
+    if(fees.length){const amount=fees.reduce((x,f)=>x+Number(f.amount),0);return NextResponse.json({error:`There is an outstanding fee of $${amount.toFixed(2)} on this email because of a late cancellation or no-show. Please contact VALE BEAUTY VK before booking another appointment.`},{status:409});}
+    const {data:discounts}=await client.from("customer_discounts").select("id,kind,value,starts_at,expires_at,max_uses,uses,active,note").eq("active",true).ilike("email",normalizedEmail).lte("starts_at",local.toUTC().toISO());
+    const validDiscount=(discounts||[]).filter(d=>(!d.expires_at||DateTime.fromISO(d.expires_at)>local.toUTC())&&(!d.max_uses||Number(d.uses)<Number(d.max_uses))).sort((a,b)=>Number(b.value)-Number(a.value))[0]||null;
+    const subtotal=total;
+    let discountAmount=0;
+    if(validDiscount) discountAmount=validDiscount.kind==="percent"?subtotal*(Number(validDiscount.value)/100):Number(validDiscount.value);
+    discountAmount=Math.min(subtotal,Math.max(0,discountAmount));
+    const finalTotal=Number((subtotal-discountAmount).toFixed(2));
     const token=crypto.randomBytes(24).toString("hex");
     const hash=crypto.createHash("sha256").update(token).digest("hex");
     const items=[...services,...fa,...ba].map(s=>({name:s.name,price:s.price,duration:s.duration||0}));
-    const row={name:b.name.trim(),email:normalizedEmail,notes:b.notes?.trim()||null,items,service_ids:{facial:b.facial||null,facialAddons:fa.map(x=>x.id),body:b.body||null,bodyAddons:ba.map(x=>x.id),eyebrow:!!b.eyebrow},date:b.date,start_minutes:start,duration_minutes:duration,total_price:Number(total.toFixed(2)),manage_token_hash:hash,start_at:local.toUTC().toISO(),blocked_end_at:blocked.toUTC().toISO()};
+    const row={name:b.name.trim(),email:normalizedEmail,notes:b.notes?.trim()||null,items,service_ids:{facial:b.facial||null,facialAddons:fa.map(x=>x.id),body:b.body||null,bodyAddons:ba.map(x=>x.id),eyebrow:!!b.eyebrow},date:b.date,start_minutes:start,duration_minutes:duration,total_price:finalTotal,subtotal_price:Number(subtotal.toFixed(2)),discount_amount:Number(discountAmount.toFixed(2)),discount_id:validDiscount?.id||null,manage_token_hash:hash,start_at:local.toUTC().toISO(),blocked_end_at:blocked.toUTC().toISO()};
+    const {data:conflicts}=await client.from("bookings").select("id,start_minutes,duration_minutes").eq("date",b.date).eq("status","confirmed");
+    if((conflicts||[]).some(x=>start<Number(x.start_minutes)+Number(x.duration_minutes)+BUFFER && start+duration+BUFFER>Number(x.start_minutes))) return NextResponse.json({error:"That time was just booked by someone else. Please choose another time."},{status:409});
     const {error}=await client.from("bookings").insert(row);
     if(error){if(error.code==="23P01")return NextResponse.json({error:"That time was just booked by someone else. Please choose another time."},{status:409});throw error;}
     const manageUrl=`${process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000"}/manage/${token}`;
-    const html=`<h2>Your Appointment Is Confirmed ✨</h2><p>Hi ${escapeHtml(b.name.trim())},</p><p><b>${business.name}</b><br>${b.date}<br>${b.start} – ${end.toFormat("hh:mm a")}<br>${duration} minutes<br>Total: $${total.toFixed(2)}</p><p>${items.map(i=>`${escapeHtml(i.name)} — $${Number(i.price).toFixed(2)}`).join("<br>")}</p>${b.notes?.trim()?`<p>Notes: ${escapeHtml(b.notes.trim())}</p>`:""}<hr><h3>Cancellation / Appointment Change Policy</h3><p>You must notify us at least 24 hours before your appointment to cancel or change it without a late-notice fee.</p><p><a href="${manageUrl}" style="color:#2879c7">Cancellation / Appointment Change</a></p><p>${business.email}<br>${business.phone}<br>${business.address}</p>`;
-    const owner=`<h2>New Appointment — ${business.name}</h2><p><b>Customer:</b> ${escapeHtml(b.name.trim())}<br><b>Email:</b> ${escapeHtml(normalizedEmail)}<br><b>Date:</b> ${b.date}<br><b>Start:</b> ${b.start}<br><b>Duration:</b> ${duration} min<br><b>Total:</b> $${total.toFixed(2)}</p><p>${items.map(i=>`${escapeHtml(i.name)} — $${Number(i.price).toFixed(2)}`).join("<br>")}</p><p><b>Notes:</b> ${escapeHtml(b.notes?.trim()||"None")}</p>`;
-    await Promise.allSettled([
-      sendMail({to:normalizedEmail,subject:`Appointment Confirmed — ${business.name}`,html}),
-      sendMail({to:business.email,subject:`New Appointment — ${business.name}`,html:owner})
-    ]);
+    const html=`<h2>Your Appointment Is Confirmed ✨</h2><p>Hi ${escapeHtml(b.name.trim())},</p><p><b>${business.name}</b><br>${b.date}<br>${b.start} – ${end.toFormat("hh:mm a")}<br>${duration} minutes<br>Subtotal: $${subtotal.toFixed(2)}<br>${discountAmount>0?`Discount: -$${discountAmount.toFixed(2)}<br>`:""}<b>Total: $${finalTotal.toFixed(2)}</b></p><p>${items.map(i=>`${escapeHtml(i.name)} — $${Number(i.price).toFixed(2)}`).join("<br>")}</p>${b.notes?.trim()?`<p>Notes: ${escapeHtml(b.notes.trim())}</p>`:""}<hr><h3>Cancellation / Appointment Change Policy</h3><p>You must notify us at least 24 hours before your appointment to cancel or change it without a late-notice fee.</p><p><a href="${manageUrl}" style="color:#2879c7">Cancellation / Appointment Change</a></p><p>${business.email}<br>${business.phone}<br>${business.address}</p>`;
+    const adminUrl=`${process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000"}/admin`;
+    const owner=`<h2>New Appointment — ${business.name}</h2><p><b>Customer:</b> ${escapeHtml(b.name.trim())}<br><b>Email:</b> ${escapeHtml(normalizedEmail)}<br><b>Date:</b> ${b.date}<br><b>Start:</b> ${b.start}<br><b>Duration:</b> ${duration} min<br><b>Subtotal:</b> $${subtotal.toFixed(2)}<br><b>Discount:</b> -$${discountAmount.toFixed(2)}<br><b>Total:</b> $${finalTotal.toFixed(2)}</p><p>${items.map(i=>`${escapeHtml(i.name)} — $${Number(i.price).toFixed(2)}`).join("<br>")}</p><p><b>Notes:</b> ${escapeHtml(b.notes?.trim()||"None")}</p><p><a href="${adminUrl}" style="display:inline-block;padding:12px 18px;background:#2879c7;color:#fff;text-decoration:none">🔐 Open Admin Dashboard</a></p>`;
+    await Promise.allSettled([sendMail({to:normalizedEmail,subject:`Appointment Confirmed — ${business.name}`,html}),sendMail({to:business.email,subject:`New Appointment — ${business.name}`,html:owner})]);
+    if(validDiscount) await client.from("customer_discounts").update({uses:Number(validDiscount.uses||0)+1,active:validDiscount.max_uses && Number(validDiscount.uses||0)+1>=Number(validDiscount.max_uses)?false:true}).eq("id",validDiscount.id);
     return NextResponse.json({message:"Please check your email for your appointment confirmation and booking details."});
   }catch(e){console.error(e);return NextResponse.json({error:"Server error. Please try again or contact the studio."},{status:500})}
 }
