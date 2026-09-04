@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { facialAddons, bodyAddons } from "../../lib/services";
 
@@ -27,24 +27,32 @@ function Card({ s, onSelect, selected, onRemove }) {
 
 export default function ServicesClient({ sections, initialSelection }) {
   const [sel, setSel] = useState(initialSelection);
+  const [basketAtEnd, setBasketAtEnd] = useState(false);
+  const dockRef = useRef(null);
 
   const selected = useMemo(() => [sel.facial, sel.body, sel.eyebrow].filter(Boolean), [sel]);
   const total = selected.reduce((a, s) => a + s.price, 0) + sel.facialAddons.reduce((a, id) => a + (facialAddons.find(x => x.id === id)?.price || 0), 0) + sel.bodyAddons.reduce((a, id) => a + (bodyAddons.find(x => x.id === id)?.price || 0), 0);
   const duration = selected.reduce((a, s) => a + s.duration, 0);
+
+  useEffect(() => {
+    const update = () => {
+      if (!dockRef.current) return;
+      const rect = dockRef.current.getBoundingClientRect();
+      setBasketAtEnd(rect.bottom <= window.innerHeight + 24);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, []);
 
   function groupFor(s) {
     if (sections[0][1].some(x => x.id === s.id)) return "facial";
     if (sections[1][1].some(x => x.id === s.id)) return "body";
     return "eyebrow";
   }
-  function pick(s) {
-    const group = groupFor(s);
-    setSel(v => ({ ...v, [group]: s }));
-  }
-  function remove(s) {
-    const group = groupFor(s);
-    setSel(v => ({ ...v, [group]: null, ...(group === "facial" ? { facialAddons: [] } : {}), ...(group === "body" ? { bodyAddons: [] } : {}) }));
-  }
+  function pick(s) { const group = groupFor(s); setSel(v => ({ ...v, [group]: s })); }
+  function remove(s) { const group = groupFor(s); setSel(v => ({ ...v, [group]: null, ...(group === "facial" ? { facialAddons: [] } : {}), ...(group === "body" ? { bodyAddons: [] } : {}) })); }
   function query() {
     const p = new URLSearchParams();
     if (sel.facial) p.set("facial", sel.facial.id);
@@ -55,7 +63,7 @@ export default function ServicesClient({ sections, initialSelection }) {
     return p.toString();
   }
 
-  return <>
+  return <div ref={dockRef} className={`selectionDock ${basketAtEnd ? "atEnd" : ""}`}>
     <div className="serviceSections">{sections.map(([title, items]) => <div key={title} className={`serviceSection ${title === "Eyebrow Threading" ? "eyebrowSection" : ""}`}>
       <h2>{title}</h2><div className="serviceGrid">{items.map(s => <Card key={s.id} s={s} selected={[sel.facial?.id, sel.body?.id, sel.eyebrow?.id].includes(s.id)} onSelect={pick} onRemove={remove} />)}</div>
     </div>)}</div>
@@ -65,5 +73,5 @@ export default function ServicesClient({ sections, initialSelection }) {
       <div className="row summaryRow"><span>Appointment duration: {duration} min</span><strong>Total: ${total}</strong></div>
       <Link className="btn" href={selected.length ? `/booking?${query()}` : "/services"} style={{ marginTop: 12, pointerEvents: selected.length ? "auto" : "none", opacity: selected.length ? 1 : .5 }}>Continue Booking</Link>
     </div>
-  </>;
+  </div>;
 }
