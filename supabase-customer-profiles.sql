@@ -11,6 +11,7 @@ create table if not exists customer_profiles (
 );
 create index if not exists customer_profiles_email_idx on customer_profiles(lower(email));
 create index if not exists customer_profiles_name_idx on customer_profiles(lower(name));
+create unique index if not exists customer_profiles_name_email_uidx on customer_profiles(lower(name),lower(email));
 alter table bookings add column if not exists customer_id uuid references customer_profiles(id) on delete set null;
 alter table customer_fees add column if not exists customer_id uuid references customer_profiles(id) on delete set null;
 alter table customer_discounts add column if not exists customer_id uuid references customer_profiles(id) on delete set null;
