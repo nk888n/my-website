@@ -106,7 +106,7 @@ export async function POST(req){
     const items=[...services,...fa,...ba].map(s=>({name:s.name,price:s.price,duration:s.duration||0}));
     const row={name:b.name.trim(),email:normalizedEmail,notes:b.notes?.trim()||null,items,service_ids:{facial:b.facial||null,facialAddons:fa.map(x=>x.id),body:b.body||null,bodyAddons:ba.map(x=>x.id),eyebrow:!!b.eyebrow},date:b.date,start_minutes:start,duration_minutes:duration,total_price:finalTotal,subtotal_price:Number(subtotal.toFixed(2)),discount_amount:Number(discountAmount.toFixed(2)),discount_id:validDiscount?.id||null,manage_token_hash:hash,start_at:local.toUTC().toISO(),blocked_end_at:blocked.toUTC().toISO()};
     const {data:conflicts}=await client.from("bookings").select("id,start_minutes,duration_minutes").eq("date",b.date).eq("status","confirmed");
-    if((conflicts||[]).some(x=>start<Number(x.start_minutes)+Number(x.duration_minutes)+BUFFER && start+duration+BUFFER>Number(x.start_minutes))) return NextResponse.json({error:"That time was just booked by someone else. Please choose another time."},{status:409});
+    if((conflicts||[]).some(x=>start<Number(x.start_minutes)+Number(x.duration_minutes)+BUFFER_MINUTES && start+duration+BUFFER_MINUTES>Number(x.start_minutes))) return NextResponse.json({error:"That time was just booked by someone else. Please choose another time."},{status:409});
     const {error}=await client.from("bookings").insert(row);
     if(error){if(error.code==="23P01")return NextResponse.json({error:"That time was just booked by someone else. Please choose another time."},{status:409});throw error;}
     const manageUrl=`${process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000"}/manage/${token}`;
