@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { facialAddons, bodyAddons } from "../../lib/services";
+
+const STORAGE_KEY = "vale-beauty-service-selection";
 
 function Card({ s, onSelect, selected, onRemove }) {
   const [open, setOpen] = useState(false);
@@ -27,24 +29,24 @@ function Card({ s, onSelect, selected, onRemove }) {
 
 export default function ServicesClient({ sections, initialSelection }) {
   const [sel, setSel] = useState(initialSelection);
-  const [basketAtEnd, setBasketAtEnd] = useState(false);
-  const dockRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") setSel(v => ({ ...v, ...parsed }));
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(sel)); } catch {}
+  }, [sel]);
 
   const selected = useMemo(() => [sel.facial, sel.body, sel.eyebrow].filter(Boolean), [sel]);
   const total = selected.reduce((a, s) => a + s.price, 0) + sel.facialAddons.reduce((a, id) => a + (facialAddons.find(x => x.id === id)?.price || 0), 0) + sel.bodyAddons.reduce((a, id) => a + (bodyAddons.find(x => x.id === id)?.price || 0), 0);
   const duration = selected.reduce((a, s) => a + s.duration, 0);
-
-  useEffect(() => {
-    const update = () => {
-      if (!dockRef.current) return;
-      const rect = dockRef.current.getBoundingClientRect();
-      setBasketAtEnd(rect.bottom <= window.innerHeight + 24);
-    };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
-  }, []);
 
   function groupFor(s) {
     if (sections[0][1].some(x => x.id === s.id)) return "facial";
@@ -63,7 +65,7 @@ export default function ServicesClient({ sections, initialSelection }) {
     return p.toString();
   }
 
-  return <div ref={dockRef} className={`selectionDock ${basketAtEnd ? "atEnd" : ""}`}>
+  return <div className="selectionDock">
     <div className="serviceSections">{sections.map(([title, items]) => <div key={title} className={`serviceSection ${title === "Eyebrow Threading" ? "eyebrowSection" : ""}`}>
       <h2>{title}</h2><div className="serviceGrid">{items.map(s => <Card key={s.id} s={s} selected={[sel.facial?.id, sel.body?.id, sel.eyebrow?.id].includes(s.id)} onSelect={pick} onRemove={remove} />)}</div>
     </div>)}</div>
