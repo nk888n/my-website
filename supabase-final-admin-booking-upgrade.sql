@@ -15,10 +15,13 @@ create index if not exists customer_fees_customer_idx on customer_fees(customer_
 alter table bookings add column if not exists cancelled_by text check (cancelled_by in ('client','studio'));
 alter table bookings add column if not exists cancellation_reason text;
 alter table bookings add column if not exists cancellation_notified boolean;
-
 create index if not exists bookings_customer_date_idx on bookings(customer_id,date,start_minutes);
 
--- Existing customer discounts remain customer-specific. Any old row without scope is customer scope.
-update customer_discounts set scope='customer' where scope is null;
+create table if not exists customer_profile_tombstones (
+  customer_id uuid primary key,
+  name text not null,
+  email text not null,
+  deleted_at timestamptz not null default now()
+);
 
--- Audit actions used by the final admin workflow are stored in admin_audit_log.
+update customer_discounts set scope='customer' where scope is null;
