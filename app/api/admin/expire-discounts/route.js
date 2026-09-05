@@ -1,0 +1,6 @@
+import {NextResponse} from "next/server";
+import {createClient} from "@supabase/supabase-js";
+import {DateTime} from "luxon";
+import {business} from "../../../../lib/services";
+const db=()=>createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
+export async function POST(req){if(req.headers.get("x-admin-pin")!==process.env.ADMIN_PIN)return NextResponse.json({error:"Access denied"},{status:403});try{const c=db(),now=DateTime.now().setZone(business.timezone).toUTC().toISO();const {data,error}=await c.from("customer_discounts").select("id,email,scope,service_ids,expires_at").eq("active",true).not("expires_at","is",null).lte("expires_at",now);if(error&&error.code!=="42P01")throw error;for(const d of data||[]){await c.from("customer_discounts").update({active:false,updated_at:new Date().toISOString()}).eq("id",d.id);await c.from("admin_audit_log").insert({action:d.scope==="service"?"service_discount_expired":"customer_discount_expired",entity_type:"discount",entity_id:d.id,email:d.email||null,details:{scope:d.scope,serviceIds:d.service_ids||[],expiredAt:d.expires_at}})}return NextResponse.json({expired:(data||[]).length})}catch(e){console.error(e);return NextResponse.json({error:"Could not expire discounts."},{status:500})}}
