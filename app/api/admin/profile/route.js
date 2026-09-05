@@ -17,7 +17,7 @@ export async function POST(req){
   await c.from("bookings").update({name:p.name,email:p.email}).eq("customer_id",p.id);
   await c.from("customer_fees").update({email:p.email}).eq("customer_id",p.id);
   await c.from("customer_discounts").update({email:p.email}).eq("customer_id",p.id);
-  await c.from("admin_audit_log").insert({action:"save_customer_profile",entity_type:"customer",entity_id:p.id,email:p.email,details:{name:p.name}});
+  await c.from("admin_audit_log").insert({action:"update_customer_profile",entity_type:"customer",entity_id:p.id,email:p.email,details:{name:p.name}});
   return NextResponse.json({profile:p,message:"Profile saved."});
  }catch(e){console.error(e);return NextResponse.json({error:"Could not save customer profile."},{status:500})}
 }
