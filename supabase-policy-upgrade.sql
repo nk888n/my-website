@@ -34,3 +34,24 @@ alter table waitlist enable row level security;
 alter table bookings add column if not exists subtotal_price numeric(10,2);
 alter table bookings add column if not exists discount_amount numeric(10,2) not null default 0;
 alter table bookings add column if not exists discount_id uuid;
+
+-- Private studio files/notes. Files live in the private Supabase Storage bucket "customer-files".
+create table if not exists customer_files (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid references customer_profiles(id) on delete cascade,
+  booking_id uuid references bookings(id) on delete cascade,
+  file_path text,
+  file_name text,
+  mime_type text,
+  size_bytes bigint,
+  note text,
+  created_at timestamptz not null default now(),
+  check (customer_id is not null),
+  check (file_path is not null or note is not null)
+);
+create index if not exists customer_files_customer_idx on customer_files(customer_id,created_at desc);
+create index if not exists customer_files_booking_idx on customer_files(booking_id,created_at desc);
+alter table customer_files enable row level security;
+insert into storage.buckets (id,name,public)
+values ('customer-files','customer-files',false)
+on conflict (id) do update set public=false;
