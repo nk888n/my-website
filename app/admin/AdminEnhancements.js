@@ -3,19 +3,14 @@ import {useEffect,useState} from "react";
 import {createPortal} from "react-dom";
 import CustomerDossier from "./CustomerDossier";
 function money(v){return `$${Number(v||0).toFixed(2)}`}
+function deletedKey(name,email){return `vale_deleted_customer_${`${name}::${email}`.toLowerCase()}`}
+function hideDeletedCustomers(){document.querySelectorAll(".customerCardButton").forEach(card=>{const text=card.innerText||"",email=(text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[])[0]||"",lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean),name=lines.find(x=>x!==email&&!/bookings?|attended|no-show|spent|outstanding/i.test(x))||"";if(email&&name&&localStorage.getItem(deletedKey(name,email)))card.style.display="none"})}
 export default function AdminEnhancements(){
  const [modal,setModal]=useState(null),[customers,setCustomers]=useState([]),[feeOpen,setFeeOpen]=useState(false),[selected,setSelected]=useState(""),[amount,setAmount]=useState(""),[reason,setReason]=useState("Admin fee"),[notify,setNotify]=useState(false),[msg,setMsg]=useState(""),[saving,setSaving]=useState(false);
  const pin=()=>sessionStorage.getItem("vale_admin_pin")||"";
  useEffect(()=>{
-  const onClick=e=>{
-   const card=e.target.closest?.(".customerCardButton");
-   if(!card)return;
-   e.preventDefault();e.stopPropagation();
-   const text=card.innerText||"",email=(text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[])[0]||"";
-   const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean),name=lines.find(x=>x!==email&&!/bookings?|attended|no-show|spent|outstanding/i.test(x))||"";
-   fetch("/api/admin",{headers:{"x-admin-pin":pin()},cache:"no-store"}).then(r=>r.json()).then(j=>{const list=j.customers||[];setCustomers(list);const c=list.find(x=>x.email?.toLowerCase()===email.toLowerCase()&&x.name===name)||list.find(x=>x.email?.toLowerCase()===email.toLowerCase());setModal(c||{id:null,name,email,phone:"",address:"",internal_notes:"",bookings:0,attended:0,noShows:0,lateCancels:0,totalSpent:0,outstanding:0,fees:[],discounts:[],history:[]})}).catch(()=>{});
-  };
-  document.addEventListener("click",onClick,true);return()=>document.removeEventListener("click",onClick,true)
+  const onClick=e=>{const card=e.target.closest?.(".customerCardButton");if(!card)return;e.preventDefault();e.stopPropagation();const text=card.innerText||"",email=(text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[])[0]||"",lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean),name=lines.find(x=>x!==email&&!/bookings?|attended|no-show|spent|outstanding/i.test(x))||"";if(email&&name&&localStorage.getItem(deletedKey(name,email))){card.style.display="none";return}fetch("/api/admin",{headers:{"x-admin-pin":pin()},cache:"no-store"}).then(r=>r.json()).then(j=>{const list=j.customers||[];setCustomers(list);const c=list.find(x=>x.email?.toLowerCase()===email.toLowerCase()&&x.name===name)||list.find(x=>x.email?.toLowerCase()===email.toLowerCase());setModal(c||{id:null,name,email,phone:"",address:"",internal_notes:"",bookings:0,attended:0,noShows:0,lateCancels:0,totalSpent:0,outstanding:0,fees:[],discounts:[],history:[]})}).catch(()=>{})};
+  document.addEventListener("click",onClick,true);hideDeletedCustomers();const root=document.querySelector(".adminShell")||document.body,observer=new MutationObserver(()=>hideDeletedCustomers());observer.observe(root,{childList:true,subtree:true});return()=>{document.removeEventListener("click",onClick,true);observer.disconnect()}
  },[]);
  useEffect(()=>{const onTab=()=>{const active=document.querySelector('.adminTabs .adminTab.active');const next=!!active?.textContent.includes("Fees");setFeeOpen(v=>v===next?v:next)};onTab();document.addEventListener("click",onTab);return()=>document.removeEventListener("click",onTab)},[]);
  useEffect(()=>{if(!feeOpen)return;fetch("/api/admin",{headers:{"x-admin-pin":pin()},cache:"no-store"}).then(r=>r.json()).then(j=>setCustomers(j.customers||[])).catch(()=>{});const old=document.querySelector(".adminSplit > .adminCard:first-child");if(old)old.style.display="none";return()=>{if(old)old.style.display=""}},[feeOpen]);
