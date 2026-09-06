@@ -74,13 +74,15 @@ export function TimeSlots({ date, duration, selected, onChange, blocked=[], avai
   const slots = useMemo(() => {
     const out=[];
     const allowed = available ? new Set(available) : null;
+    const selfStart = Number(ignoreStart);
+    const selfDuration = Number(ignoreDuration || 0);
+    const selfEndWithBuffer = selfStart + selfDuration + BUFFER_MINUTES;
     for(let start=OPEN_MINUTES; start+duration+BUFFER_MINUTES<=CLOSE_MINUTES; start+=SLOT_MINUTES){
       const value=`${pad(Math.floor(start/60))}:${pad(start%60)}`;
-      // In Manage Appointment, the customer's existing booking is excluded from
-      // the server's blocked list. Never let that booking block its old slot,
-      // its preceding slot, or its following slot while the customer reschedules.
       const conflict=blocked.some(b=>{
-        if(ignoreId && String(b.id)===String(ignoreId)) return false;
+        const isCurrentBooking = Number.isFinite(selfStart) && selfDuration>0 && Number(b.start_minutes)===selfStart && Number(b.end_minutes)===selfEndWithBuffer;
+        if(isCurrentBooking) return false;
+        if(ignoreId && b.id!=null && String(b.id)===String(ignoreId)) return false;
         return start<b.end_minutes && start+duration+BUFFER_MINUTES>b.start_minutes;
       });
       const past = date && localIsoDate(new Date())===date && start <= (new Date().getHours()*60+new Date().getMinutes());
@@ -88,7 +90,7 @@ export function TimeSlots({ date, duration, selected, onChange, blocked=[], avai
       out.push({minutes:start,value,disabled,reason:conflict?"Booked":past?"Past":"Unavailable"});
     }
     return out;
-  }, [date,duration,selected,blocked,available,loading,ignoreId]);
+  }, [date,duration,selected,blocked,available,loading,ignoreId,ignoreStart,ignoreDuration]);
 
   return <div className="timeGrid" aria-label="Available appointment times">
     {slots.map(s=><button key={s.value} type="button" className={`timeSlot ${s.disabled?"timeSlotDisabled":""} ${selected===s.value?"timeSlotSelected":""}`} disabled={s.disabled} onClick={()=>onChange(s.value)}>
