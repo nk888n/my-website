@@ -8,11 +8,13 @@ export default function ManageClient({token}){
  useEffect(()=>{if(!booking||!date||!booking.canChange)return;let cancelled=false;setLoadingSlots(true);fetch(`/api/bookings?date=${date}&duration=${booking.duration}&excludeBookingId=${encodeURIComponent(booking.id)}`,{cache:"no-store"}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||"availability");return j}).then(j=>{if(cancelled)return;
    const selfStart=Number(booking.start);
    const selfEndWithBuffer=selfStart+Number(booking.duration)+30;
-   // The current customer's appointment must never block its own date/time or its buffer.
-   // Other customers keep their normal booking + 30-minute buffer.
+   // On Manage Appointment, the current customer's booking is never a blocker.
+   // Only other customers' booking + 30-minute buffer remain blocked.
    const cleanBlocked=(j.blocked||[]).filter(b=>!(date===booking.date&&Number(b.start_minutes)===selfStart&&Number(b.end_minutes)===selfEndWithBuffer));
    setBlocked(cleanBlocked);
-   setAvailable(j.available||null);
+   // Do not trust the server's available list for the current booking. TimeSlots
+   // calculates from the cleaned blocker list, so the current slot has no buffer.
+   setAvailable(null);
  }).catch(()=>{if(!cancelled){setBlocked([]);setAvailable(null)}}).finally(()=>{if(!cancelled)setLoadingSlots(false)});return()=>{cancelled=true}},[booking,date]);
  async function cancel(){if(!confirm("Cancel this appointment?"))return;const j=await request("cancel");if(j){setMsg(j.message);setBooking(null)}}
  async function reschedule(){const j=await request("reschedule",{date,start});if(j){setMsg(j.message);setBooking(null)}}
