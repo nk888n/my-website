@@ -12,7 +12,7 @@ export function monthKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
 export function labelTime(mins){ const h=Math.floor(mins/60), m=mins%60, suffix=h>=12?"PM":"AM", hh=h%12||12; return `${hh}:${pad(m)} ${suffix}`; }
 function addMonths(date, amount){ return new Date(date.getFullYear(), date.getMonth()+amount, 1); }
 
-export function Calendar({ value, onChange, minDate, duration, ignoreDate }) {
+export function Calendar({ value, onChange, minDate, duration, ignoreDate, ignoreBookingId }) {
   const [month, setMonth] = useState(() => new Date(`${value || minDate}T12:00:00`));
   const [unavailable, setUnavailable] = useState(new Set());
   const [loading, setLoading] = useState(false);
@@ -27,13 +27,14 @@ export function Calendar({ value, onChange, minDate, duration, ignoreDate }) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/bookings?month=${monthKey(month)}&duration=${duration}`, { cache:"no-store" })
+    const suffix=ignoreBookingId?`&excludeBookingId=${encodeURIComponent(ignoreBookingId)}`:"";
+    fetch(`/api/bookings?month=${monthKey(month)}&duration=${duration}${suffix}`, { cache:"no-store" })
       .then(async r => { const j=await r.json(); if(!r.ok) throw new Error(j.error||"availability"); return j; })
       .then(j => { if(!cancelled) setUnavailable(new Set(j.fullyBookedDates || [])); })
       .catch(() => { if(!cancelled) setUnavailable(new Set()); })
       .finally(() => { if(!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [month, duration]);
+  }, [month, duration, ignoreBookingId]);
 
   const cells = useMemo(() => {
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
