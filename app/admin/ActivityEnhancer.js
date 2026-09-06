@@ -1,5 +1,6 @@
 "use client";
 import {useEffect} from "react";
+import {allServices} from "../../lib/services";
 
 function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function actionLabel(action){return String(action||"").replaceAll("_"," ");}
@@ -11,6 +12,19 @@ function profileForActivity(row,data){
  if(details.name)return{name:details.name,email:row.email||details.email||""};
  if(row.entity_type==="booking"){const b=bookings.find(x=>String(x.id)===String(row.entity_id));if(b)return{name:b.name,email:b.email};}
  return customers.find(c=>String(c.email||"").trim().toLowerCase()===String(row.email||"").trim().toLowerCase())||{name:"Customer",email:row.email||""};
+}
+function bookingDiscountDetails(row,data){
+ if(row.action!=="booking_created")return "";
+ const details=row.details&&typeof row.details==="object"?row.details:{};
+ const booking=(data.bookings||[]).find(b=>String(b.id)===String(row.entity_id));
+ const discountId=details.discountId||booking?.discount_id;
+ const discount=(data.discounts||[]).find(d=>String(d.id)===String(discountId));
+ if(!booking||Number(booking.discount_amount||details.discountAmount||0)<=0)return "";
+ const eligible=(discount?.service_ids||[]).map(id=>allServices.find(s=>s.id===id)?.name).filter(Boolean);
+ const bookedServices=(booking.items||[]).filter(x=>Number(x.duration)>0).map(x=>x.name).filter(Boolean);
+ const serviceText=eligible.length?eligible.join(", "):bookedServices.join(", ");
+ const discountText=discount?(discount.kind==="percent"?`${Number(discount.value)}%`: `$${Number(discount.value).toFixed(2)}`):"discount";
+ return `Booked: ${serviceText||"service"} · Discount: ${discountText} · Discount applied: $${Number(booking.discount_amount||details.discountAmount||0).toFixed(2)}`;
 }
 
 export default function ActivityEnhancer(){
@@ -31,7 +45,11 @@ export default function ActivityEnhancer(){
     rows.forEach(row=>{
      const item=document.createElement("div");item.style.padding="11px 0";item.style.borderBottom="1px solid var(--line)";
      const p=profileForActivity(row,data),name=p.name||"Customer",email=p.email||row.email||"",time=row.created_at?new Date(row.created_at).toLocaleString():"—",details=row.details&&typeof row.details==="object"?row.details:{};
-     let detail="";if(details.reason)detail=`Reason: ${details.reason}`;if(details.notify!==undefined)detail+=(detail?" · ":"")+`Customer notified: ${details.notify?"Yes":"No"}`;
+     let detail="";
+     if(details.reason)detail=`Reason: ${details.reason}`;
+     if(details.notify!==undefined)detail+=(detail?" · ":"")+`Customer notified: ${details.notify?"Yes":"No"}`;
+     const discountDetail=bookingDiscountDetails(row,data);
+     if(discountDetail)detail+=(detail?" · ":"")+discountDetail;
      item.innerHTML=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px"><div style="min-width:0"><div style="font-weight:600;font-size:15px">${esc(actionLabel(row.action))}</div><div style="margin-top:3px;font-size:13px;line-height:1.35"><span style="font-weight:500">${esc(name)}</span><span style="display:block;color:#8b8580;font-size:11px;opacity:.78;word-break:break-all">${esc(email)}</span>${detail?`<span style="display:block;color:#756f6a;font-size:12px;margin-top:4px">${esc(detail)}</span>`:""}</div></div><div style="flex:0 0 auto;color:#8b8580;font-size:11px;white-space:nowrap;text-align:right">${esc(time)}</div></div>`;
      wrap.appendChild(item);
     });
