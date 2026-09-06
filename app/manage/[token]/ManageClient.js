@@ -5,7 +5,15 @@ export default function ManageClient({token}){
  const [email,setEmail]=useState(""),[booking,setBooking]=useState(null),[msg,setMsg]=useState(""),[date,setDate]=useState(""),[start,setStart]=useState(""),[blocked,setBlocked]=useState([]),[available,setAvailable]=useState(null),[loading,setLoading]=useState(false),[loadingSlots,setLoadingSlots]=useState(false);
  async function request(action,extra={}){setLoading(true);setMsg("");try{const r=await fetch(`/api/manage/${token}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,action,...extra})});const j=await r.json();if(!r.ok)throw new Error(j.error||"We could not complete that request.");return j}catch(e){setMsg(e.message);return null}finally{setLoading(false)}}
  async function verify(){const j=await request("verify");if(j){setBooking(j.booking);setDate(j.booking.date);setStart(`${String(Math.floor(Number(j.booking.start)/60)).padStart(2,"0")}:${String(Number(j.booking.start)%60).padStart(2,"0")}`);setMsg("")}}
- useEffect(()=>{if(!booking||!date||!booking.canChange)return;let cancelled=false;setLoadingSlots(true);fetch(`/api/bookings?date=${date}&duration=${booking.duration}&excludeBookingId=${encodeURIComponent(booking.id)}`,{cache:"no-store"}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||"availability");return j}).then(j=>{if(cancelled)return;setBlocked(j.blocked||[]);setAvailable(null)}).catch(()=>{if(!cancelled){setBlocked([]);setAvailable(null)}}).finally(()=>{if(!cancelled)setLoadingSlots(false)});return()=>{cancelled=true}},[booking,date]);
+ useEffect(()=>{if(!booking||!date||!booking.canChange)return;let cancelled=false;setLoadingSlots(true);fetch(`/api/bookings?date=${date}&duration=${booking.duration}&excludeBookingId=${encodeURIComponent(booking.id)}`,{cache:"no-store"}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||"availability");return j}).then(j=>{if(cancelled)return;
+   const selfStart=Number(booking.start);
+   const selfEndWithBuffer=selfStart+Number(booking.duration)+30;
+   // The current customer's appointment must never block its own date/time or its buffer.
+   // Other customers keep their normal booking + 30-minute buffer.
+   const cleanBlocked=(j.blocked||[]).filter(b=>!(date===booking.date&&Number(b.start_minutes)===selfStart&&Number(b.end_minutes)===selfEndWithBuffer));
+   setBlocked(cleanBlocked);
+   setAvailable(j.available||null);
+ }).catch(()=>{if(!cancelled){setBlocked([]);setAvailable(null)}}).finally(()=>{if(!cancelled)setLoadingSlots(false)});return()=>{cancelled=true}},[booking,date]);
  async function cancel(){if(!confirm("Cancel this appointment?"))return;const j=await request("cancel");if(j){setMsg(j.message);setBooking(null)}}
  async function reschedule(){const j=await request("reschedule",{date,start});if(j){setMsg(j.message);setBooking(null)}}
  const minDate=useMemo(()=>localIsoDate(new Date()),[]);
