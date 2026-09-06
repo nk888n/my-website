@@ -1,7 +1,7 @@
 "use client";
 import {useEffect} from "react";
 
-function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;"," >":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c))}
+function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function actionLabel(action){return String(action||"").replaceAll("_"," ");}
 function profileForActivity(row,data){
  const details=row.details&&typeof row.details==="object"?row.details:{};
