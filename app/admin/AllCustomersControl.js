@@ -27,22 +27,25 @@ export default function AllCustomersControl(){
      const r=await fetch("/api/admin",{headers:{"x-admin-pin":pin},cache:"no-store"});
      const j=await r.json();
      if(!r.ok)throw new Error(j.error||"Could not load customers.");
-     const unique=[];const seen=new Set();
-     for(const c of j.customers||[]){const email=String(c.email||"").trim().toLowerCase();if(email&&!seen.has(email)){seen.add(email);unique.push(c)}}
+     const all=Array.isArray(j.customers)?j.customers.filter(c=>c?.id&&String(c.email||"").trim()):[];
      const input=heading.parentElement.querySelector("input.adminSearch");
      if(!input)throw new Error("Customer search is unavailable.");
-     for(const c of unique){
+     for(const c of all){
       const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")?.set;
       setter?.call(input,String(c.name||c.email));
       input.dispatchEvent(new Event("input",{bubbles:true}));
-      await sleep(80);
+      await sleep(100);
       const suggestions=[...heading.parentElement.querySelectorAll(".customerSuggestions button")];
-      const email=String(c.email||"").toLowerCase();
-      const match=suggestions.find(x=>x.textContent.toLowerCase().includes(email))||suggestions[0];
+      const id=String(c.id);
+      const email=String(c.email||"").trim().toLowerCase();
+      const name=String(c.name||"").trim().toLowerCase();
+      const match=suggestions.find(x=>x.dataset.customerId===id)
+       ||suggestions.find(x=>x.textContent.toLowerCase().includes(email)&&x.textContent.toLowerCase().includes(name))
+       ||suggestions.find(x=>x.textContent.toLowerCase().includes(email));
       if(match)match.click();
-      await sleep(80);
+      await sleep(100);
      }
-     button.textContent=`All customers selected (${unique.length})`;
+     button.textContent=`All customers selected (${all.length})`;
     }catch(e){window.alert(e.message||"Could not select all customers.");button.textContent="Send to all customers"}
     finally{busy=false;button.disabled=false}
    });
