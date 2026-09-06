@@ -69,20 +69,25 @@ export function Calendar({ value, onChange, minDate, duration, ignoreDate }) {
   </div>;
 }
 
-export function TimeSlots({ date, duration, selected, onChange, blocked=[], available=null, loading=false, ignoreId }) {
+export function TimeSlots({ date, duration, selected, onChange, blocked=[], available=null, loading=false, ignoreId, ignoreStart, ignoreDuration }) {
   const slots = useMemo(() => {
     const out=[];
     const allowed = available ? new Set(available) : null;
+    const selfStart = Number(ignoreStart);
+    const selfEnd = selfStart + Number(ignoreDuration || 0) + BUFFER_MINUTES;
     for(let start=OPEN_MINUTES; start+duration+BUFFER_MINUTES<=CLOSE_MINUTES; start+=SLOT_MINUTES){
       const value=`${pad(Math.floor(start/60))}:${pad(start%60)}`;
-      const endWithBuffer=start+duration+BUFFER_MINUTES;
-      const conflict=blocked.some(b=>b.id!==ignoreId && start<b.end_minutes && endWithBuffer>b.start_minutes);
+      const conflict=blocked.some(b=>{
+        const isSelf = Number.isFinite(selfStart) && Number(b.start_minutes)===selfStart && Number(b.end_minutes)===selfEnd;
+        if(isSelf) return false;
+        return b.id!==ignoreId && start<b.end_minutes && start+duration+BUFFER_MINUTES>b.start_minutes;
+      });
       const past = date && localIsoDate(new Date())===date && start <= (new Date().getHours()*60+new Date().getMinutes());
       const disabled=loading || conflict || past || (allowed ? !allowed.has(value) : false);
       out.push({minutes:start,value,disabled,reason:conflict?"Booked":past?"Past":"Unavailable"});
     }
     return out;
-  }, [date,duration,selected,blocked,available,loading,ignoreId]);
+  }, [date,duration,selected,blocked,available,loading,ignoreId,ignoreStart,ignoreDuration]);
 
   return <div className="timeGrid" aria-label="Available appointment times">
     {slots.map(s=><button key={s.value} type="button" className={`timeSlot ${s.disabled?"timeSlotDisabled":""} ${selected===s.value?"timeSlotSelected":""}`} disabled={s.disabled} onClick={()=>onChange(s.value)}>
