@@ -74,27 +74,21 @@ export function TimeSlots({ date, duration, selected, onChange, blocked=[], avai
   const slots = useMemo(() => {
     const out=[];
     const allowed = available ? new Set(available) : null;
-    const selfStart = Number(ignoreStart);
-    const selfDuration = Number(ignoreDuration || 0);
-    const selfEnd = selfStart + selfDuration;
-    const selfBlockedEnd = selfEnd + BUFFER_MINUTES;
     for(let start=OPEN_MINUTES; start+duration+BUFFER_MINUTES<=CLOSE_MINUTES; start+=SLOT_MINUTES){
       const value=`${pad(Math.floor(start/60))}:${pad(start%60)}`;
+      // In Manage Appointment, the customer's existing booking is excluded from
+      // the server's blocked list. Never let that booking block its old slot,
+      // its preceding slot, or its following slot while the customer reschedules.
       const conflict=blocked.some(b=>{
-        const isSelf = Number.isFinite(selfStart) && Number.isFinite(selfDuration) && Number(b.start_minutes)===selfStart && Number(b.end_minutes)===selfBlockedEnd;
-        if(isSelf){
-          // For the customer's own appointment, do NOT consume the 30 minutes before it.
-          // Keep the current start and the post-appointment buffer unavailable.
-          return start===selfStart || (start>=selfEnd && start<selfBlockedEnd);
-        }
-        return b.id!==ignoreId && start<b.end_minutes && start+duration+BUFFER_MINUTES>b.start_minutes;
+        if(ignoreId && String(b.id)===String(ignoreId)) return false;
+        return start<b.end_minutes && start+duration+BUFFER_MINUTES>b.start_minutes;
       });
       const past = date && localIsoDate(new Date())===date && start <= (new Date().getHours()*60+new Date().getMinutes());
       const disabled=loading || conflict || past || (allowed ? !allowed.has(value) : false);
       out.push({minutes:start,value,disabled,reason:conflict?"Booked":past?"Past":"Unavailable"});
     }
     return out;
-  }, [date,duration,selected,blocked,available,loading,ignoreId,ignoreStart,ignoreDuration]);
+  }, [date,duration,selected,blocked,available,loading,ignoreId]);
 
   return <div className="timeGrid" aria-label="Available appointment times">
     {slots.map(s=><button key={s.value} type="button" className={`timeSlot ${s.disabled?"timeSlotDisabled":""} ${selected===s.value?"timeSlotSelected":""}`} disabled={s.disabled} onClick={()=>onChange(s.value)}>
