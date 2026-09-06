@@ -22,7 +22,7 @@ export function Calendar({ value, onChange, minDate, duration, ignoreDate, ignor
     if (wanted.getFullYear() !== month.getFullYear() || wanted.getMonth() !== month.getMonth()) {
       setMonth(new Date(wanted.getFullYear(), wanted.getMonth(), 1));
     }
-  }, [value]);
+  }, [value, minDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +79,7 @@ export function TimeSlots({ date, duration, selected, onChange, blocked=[], avai
     const selfEndWithBuffer = selfStart + selfDuration + BUFFER_MINUTES;
     for(let start=OPEN_MINUTES; start+duration+BUFFER_MINUTES<=CLOSE_MINUTES; start+=SLOT_MINUTES){
       const value=`${pad(Math.floor(start/60))}:${pad(start%60)}`;
+      const isSelected = selected===value;
       const conflict=blocked.some(b=>{
         const isCurrentBooking = Number.isFinite(selfStart) && selfDuration>0 && Number(b.start_minutes)===selfStart && Number(b.end_minutes)===selfEndWithBuffer;
         if(isCurrentBooking) return false;
@@ -87,7 +88,7 @@ export function TimeSlots({ date, duration, selected, onChange, blocked=[], avai
       });
       const past = date && localIsoDate(new Date())===date && start <= (new Date().getHours()*60+new Date().getMinutes());
       const disabled=loading || conflict || past || (allowed ? !allowed.has(value) : false);
-      out.push({minutes:start,value,disabled,reason:conflict?"Booked":past?"Past":"Unavailable"});
+      out.push({minutes:start,value,disabled,reason:conflict?"Booked":past?"Past":isSelected?"Current booking":"Unavailable"});
     }
     return out;
   }, [date,duration,selected,blocked,available,loading,ignoreId,ignoreStart,ignoreDuration]);
@@ -95,7 +96,8 @@ export function TimeSlots({ date, duration, selected, onChange, blocked=[], avai
   return <div className="timeGrid" aria-label="Available appointment times">
     {slots.map(s=><button key={s.value} type="button" className={`timeSlot ${s.disabled?"timeSlotDisabled":""} ${selected===s.value?"timeSlotSelected":""}`} disabled={s.disabled} onClick={()=>onChange(s.value)}>
       <span>{labelTime(s.minutes)}</span>
-      {s.disabled && <small>{s.reason}</small>}
+      {selected===s.value && <small>حجزك الحالي</small>}
+      {s.disabled && selected!==s.value && <small>{s.reason}</small>}
     </button>)}
     {!slots.length && <p className="muted small">No appointment times fit this service before 7:00 PM.</p>}
   </div>;
