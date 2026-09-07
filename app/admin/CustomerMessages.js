@@ -3,11 +3,11 @@ import {useEffect,useState} from "react";
 
 function fmtDate(value){return value?new Date(value).toLocaleString():"—"}
 
-export default function CustomerMessages({customerId,email}){
+export default function CustomerMessages({customerId,email,onCount}){
   const[messages,setMessages]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState("");
   const pin=()=>window.sessionStorage.getItem("vale_admin_pin")||"";
   useEffect(()=>{
-    if(!customerId&&!email){setMessages([]);return}
+    if(!customerId&&!email){setMessages([]);onCount?.(0);return}
     let cancelled=false;
     (async()=>{
       setLoading(true);setError("");
@@ -18,14 +18,14 @@ export default function CustomerMessages({customerId,email}){
         const r=await fetch(`/api/admin/customer-messages?${qs.toString()}`,{headers:{"x-admin-pin":pin()},cache:"no-store"});
         const j=await r.json();
         if(!r.ok)throw Error(j.error||"Could not load message history.");
-        if(!cancelled)setMessages(j.messages||[]);
-      }catch(e){if(!cancelled)setError(e.message)}finally{if(!cancelled)setLoading(false)}
+        if(!cancelled){const next=j.messages||[];setMessages(next);onCount?.(next.length)}
+      }catch(e){if(!cancelled){setError(e.message);onCount?.(0)}}finally{if(!cancelled)setLoading(false)}
     })();
     return()=>{cancelled=true};
-  },[customerId,email]);
+  },[customerId,email,onCount]);
 
   return <section className="dossierSection" id="dossier-messages">
-    <div className="dossierSectionTitle"><span>02</span><h3>Messages</h3></div>
+    <div className="dossierSectionTitle"><span>09</span><h3>Messages</h3></div>
     <p className="muted small">Email history recorded after the message was accepted for sending. This shows what the system actually sent; it does not prove the message reached the customer's inbox.</p>
     {loading&&<p className="muted">Loading message history…</p>}
     {error&&<p className="error">{error}</p>}
