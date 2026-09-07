@@ -3,6 +3,7 @@ import {useEffect} from "react";
 
 export default function SiteVisitorTracker(){
   useEffect(()=>{
+    if(window.location.pathname.startsWith("/admin"))return;
     try{
       if(sessionStorage.getItem("vale_visit_tracked"))return;
       sessionStorage.setItem("vale_visit_tracked","1");
