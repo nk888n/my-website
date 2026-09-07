@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import "./customer-messages.css";
 
 function fmtDate(value){return value?new Date(value).toLocaleString():"—"}
 
