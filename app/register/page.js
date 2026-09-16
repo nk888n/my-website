@@ -1,0 +1,2 @@
+import RegisterClient from "./RegisterClient";
+export default function RegisterPage(){return <main className="container"><nav className="nav"><a className="brand" href="/">VALE BEAUTY VK</a><div className="navlinks"><a href="/services">Services</a><a href="/booking">Booking</a></div></nav><section className="section"><div className="eyebrow">VALE BEAUTY</div><h1>Create your profile</h1><p style={{color:"var(--muted)",maxWidth:620}}>Register once to receive special offers, gifts and winner rewards without needing to make a booking first.</p><RegisterClient/></section></main>}
