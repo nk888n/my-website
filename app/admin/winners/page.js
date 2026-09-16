@@ -1,2 +1,2 @@
-import WinnerManager from "../WinnerManager";
-export default function WinnersPage(){return <main className="container"><nav className="nav"><a className="brand" href="/">VALE BEAUTY VK</a><a href="/admin">Admin</a></nav><section className="section"><div className="eyebrow">Customer Rewards</div><h1>Winner Gifts</h1><p style={{color:"var(--muted)",maxWidth:700}}>Create a gift for a registered customer without requiring a booking first. The gift is attached to the selected service and can have an expiration date and usage limit.</p><WinnerManager/></section></main>}
+import {redirect} from "next/navigation";
+export default function WinnersPage(){redirect("/admin");}
