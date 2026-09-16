@@ -1,9 +1,234 @@
 "use client";
-import {useMemo,useState,useEffect} from "react";
+
+import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {facialAddons,bodyAddons,allServices} from "../../lib/services";
+
 const STORAGE_KEY="vale-beauty-service-selection";
 const CUSTOMER_KEY="vale-customer-session";
-function discountAmount(d,price){if(!d)return 0;return Math.min(price,Math.max(0,d.kind==="percent"?price*Number(d.value)/100:Number(d.value)))}
-function Card({s,onSelect,selected,onRemove,discount,reward}){const[open,setOpen]=useState(false),newPrice=reward?0:Math.max(0,s.price-discountAmount(discount,s.price));return <article className={`card ${open?"expanded":""}`}><div className="cardimg"><img src={s.image} alt={s.name}/><div className="cardname">{s.name}</div></div><div className="cardbody"><div className="row"><span>{s.duration} min</span><span className="price">{reward?<><del>${s.price}</del> <strong>FREE</strong></>:discount?<><del>${s.price}</del> <strong>${newPrice.toFixed(2)}</strong></>:`$${s.price}`}</span></div>{reward?<div className="discountBadge" style={{background:"#fbf2df",color:"#8d6b2f"}}>YOUR GIFT · FREE</div>:discount&&<div className="discountBadge">SPECIAL {discount.kind==="percent"?`${discount.value}% OFF`:`$${Number(discount.value).toFixed(2)} OFF`}</div>}<div className="cardactions"><button type="button" className="iconbtn arrow" onClick={()=>setOpen(v=>!v)} aria-expanded={open}>{open?"⌃":"⌄"}</button>{selected?<button type="button" className="removeMini" onClick={()=>onRemove(s)}>Remove</button>:<button type="button" className="iconbtn" onClick={()=>onSelect(s)} aria-label={`Add ${s.name}`}>🛒</button>}</div></div>{open&&<div className="details"><div className="detailsInner">{reward&&<div className="free"><strong>🎁 Your Winner Gift</strong><p style={{margin:"6px 0"}}>{reward.prize_name} — this service is FREE for you.</p></div>}{s.tagline&&<h3>{s.tagline}</h3>}<p>{s.description}</p>{s.skinTypes&&<><strong>Skin types</strong><div className="pills">{s.skinTypes.map(x=><span className="pill" key={x}>{x}</span>)}</div></>}<strong>Includes</strong><ul>{s.includes?.map(x=><li key={x}>{x}</li>)}</ul>{s.free&&<div className="free"><strong>Free gifts</strong><ul>{s.free.map(x=><li key={x}>{x}</li>)}</ul></div>}</div></div>}</article>}
-export default function ServicesClient({sections,initialSelection}){const[sel,setSel]=useState(initialSelection),[discounts,setDiscounts]=useState([]),[customer,setCustomer]=useState(null),[rewards,setRewards]=useState([]);useEffect(()=>{try{const saved=sessionStorage.getItem(STORAGE_KEY);if(saved){const parsed=JSON.parse(saved);if(parsed&&typeof parsed==="object")setSel(v=>({...v,...parsed}))}}catch{}},[]);useEffect(()=>{try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify(sel))}catch{}},[sel]);useEffect(()=>{fetch("/api/discounts",{cache:"no-store"}).then(r=>r.json()).then(j=>setDiscounts(j.discounts||[])).catch(()=>setDiscounts([]));try{const raw=localStorage.getItem(CUSTOMER_KEY);if(!raw)return;const c=JSON.parse(raw);if(!c?.id||!c?.email)return;setCustomer(c);fetch(`/api/customer-rewards?customerId=${encodeURIComponent(c.id)}&email=${encodeURIComponent(c.email)}`,{cache:"no-store"}).then(r=>r.json()).then(j=>setRewards(j.rewards||[])).catch(()=>setRewards([]))}catch{}},[]);const selected=useMemo(()=>[sel.facial,sel.body,sel.eyebrow].filter(Boolean),[sel]);function rewardFor(s){return rewards.find(r=>r.service_id===s.id)||null}function best(s){if(rewardFor(s))return null;return discounts.filter(d=>(d.service_ids||[]).includes(s.id)).sort((a,b)=>Number(b.value)-Number(a.value))[0]||null}const pricing=selected.map(s=>{const reward=rewardFor(s),d=best(s);return{s,reward,d,amount:reward?s.price:discountAmount(d,s.price)}}),regular=selected.reduce((a,s)=>a+s.price,0)+sel.facialAddons.reduce((a,id)=>a+(facialAddons.find(x=>x.id===id)?.price||0),0)+sel.bodyAddons.reduce((a,id)=>a+(bodyAddons.find(x=>x.id===id)?.price||0),0),discountTotal=pricing.reduce((a,x)=>a+x.amount,0),total=Math.max(0,regular-discountTotal);function groupFor(s){if(sections[0][1].some(x=>x.id===s.id))return"facial";if(sections[1][1].some(x=>x.id===s.id))return"body";return"eyebrow"}function pick(s){setSel(v=>({...v,[groupFor(s)]:s}))}function remove(s){const g=groupFor(s);setSel(v=>({...v,[g]:null,...(g==="facial"?{facialAddons:[]}:{}),...(g==="body"?{bodyAddons:[]}: {})}))}function query(){const p=new URLSearchParams();if(sel.facial)p.set("facial",sel.facial.id);if(sel.body)p.set("body",sel.body.id);if(sel.eyebrow)p.set("eyebrow","1");if(sel.facialAddons.length)p.set("fa",sel.facialAddons.join(","));if(sel.bodyAddons.length)p.set("ba",sel.bodyAddons.join(","));return p.toString()}return <div className="selectionDock">{customer&&<div className="success" style={{marginBottom:20,textAlign:"left"}}><strong>Hi {customer.name} ✨</strong>{rewards.length?<p style={{margin:"6px 0 0"}}>You have {rewards.length} winner gift{rewards.length===1?"":"s"}. Look for <b>YOUR GIFT · FREE</b> on your eligible service{rewards.length===1?"":"s"}.</p>:<p style={{margin:"6px 0 0"}}>Your profile is connected. Any future offers or rewards will appear here automatically.</p>}</div>}<div className="serviceSections">{sections.map(([title,items])=><div key={title} className={`serviceSection ${title==="Eyebrow Threading"?"eyebrowSection":""}`}><h2>{title}</h2><div className="serviceGrid">{items.map(s=><Card key={s.id} s={s} discount={best(s)} reward={rewardFor(s)} selected={[sel.facial?.id,sel.body?.id,sel.eyebrow?.id].includes(s.id)} onSelect={pick} onRemove={remove}/>)}</div></div>)}</div><div className="bookingbox selectionBox"><strong>Your Selection</strong>{selected.length?<div className="selectionList">{selected.map(s=>{const d=best(s),reward=rewardFor(s),da=reward?s.price:discountAmount(d,s.price);return <div className="selectionItem" key={s.id}><span>{s.name} — {reward?<><del>${s.price}</del> <strong>FREE</strong></>:d?<><del>${s.price}</del> <strong>${(s.price-da).toFixed(2)}</strong>:`$${s.price}`} · {s.duration} min</span><button type="button" className="textRemove" onClick={()=>remove(s)}>Remove</button></div>})}</div>:<p className="muted">Nothing selected yet.</p>}<div className="row summaryRow"><span>Appointment duration: {selected.reduce((a,s)=>a+s.duration,0)} min</span><strong>{discountTotal>0?<><del>${regular.toFixed(2)}</del> ${total.toFixed(2)}</>:`Total: $${total.toFixed(2)}`}</strong></div><Link className="btn" href={selected.length?`/booking?${query()}`:"/services"} style={{marginTop:12,pointerEvents:selected.length?"auto":"none",opacity:selected.length?1:.5}}>Continue Booking</Link></div></div>}
+
+function discountAmount(d,price){
+  if(!d)return 0;
+  return Math.min(price,Math.max(0,d.kind==="percent"?price*Number(d.value)/100:Number(d.value)));
+}
+
+function Card({s,onSelect,selected,onRemove,discount,reward}){
+  const [open,setOpen]=useState(false);
+  const newPrice=reward?0:Math.max(0,s.price-discountAmount(discount,s.price));
+
+  return (
+    <article className={`card ${open?"expanded":""}`}>
+      <div className="cardimg">
+        <img src={s.image} alt={s.name}/>
+        <div className="cardname">{s.name}</div>
+      </div>
+      <div className="cardbody">
+        <div className="row">
+          <span>{s.duration} min</span>
+          <span className="price">
+            {reward ? (
+              <><del>${s.price}</del> <strong>FREE</strong></>
+            ) : discount ? (
+              <><del>${s.price}</del> <strong>${newPrice.toFixed(2)}</strong></>
+            ) : `$${s.price}`}
+          </span>
+        </div>
+        {reward ? (
+          <div className="discountBadge" style={{background:"#fbf2df",color:"#8d6b2f"}}>YOUR GIFT · FREE</div>
+        ) : discount ? (
+          <div className="discountBadge">
+            {discount.kind==="percent"?`SPECIAL ${discount.value}% OFF`:`SPECIAL $${Number(discount.value).toFixed(2)} OFF`}
+          </div>
+        ) : null}
+        <div className="cardactions">
+          <button type="button" className="iconbtn arrow" onClick={()=>setOpen(v=>!v)} aria-expanded={open}>{open?"⌃":"⌄"}</button>
+          {selected ? (
+            <button type="button" className="removeMini" onClick={()=>onRemove(s)}>Remove</button>
+          ) : (
+            <button type="button" className="iconbtn" onClick={()=>onSelect(s)} aria-label={`Add ${s.name}`}>🛒</button>
+          )}
+        </div>
+      </div>
+      {open && (
+        <div className="details">
+          <div className="detailsInner">
+            {reward && (
+              <div className="free">
+                <strong>🎁 Your Winner Gift</strong>
+                <p style={{margin:"6px 0"}}>{reward.prize_name} — this service is FREE for you.</p>
+              </div>
+            )}
+            {s.tagline && <h3>{s.tagline}</h3>}
+            <p>{s.description}</p>
+            {s.skinTypes && (
+              <>
+                <strong>Skin types</strong>
+                <div className="pills">{s.skinTypes.map(x=><span className="pill" key={x}>{x}</span>)}</div>
+              </>
+            )}
+            <strong>Includes</strong>
+            <ul>{s.includes?.map(x=><li key={x}>{x}</li>)}</ul>
+            {s.free && (
+              <div className="free">
+                <strong>Free gifts</strong>
+                <ul>{s.free.map(x=><li key={x}>{x}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
+
+export default function ServicesClient({sections,initialSelection}){
+  const [sel,setSel]=useState(initialSelection);
+  const [discounts,setDiscounts]=useState([]);
+  const [customer,setCustomer]=useState(null);
+  const [rewards,setRewards]=useState([]);
+
+  useEffect(()=>{
+    try{
+      const saved=sessionStorage.getItem(STORAGE_KEY);
+      if(saved){
+        const parsed=JSON.parse(saved);
+        if(parsed&&typeof parsed==="object")setSel(v=>({...v,...parsed}));
+      }
+    }catch{}
+  },[]);
+
+  useEffect(()=>{
+    try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify(sel));}catch{}
+  },[sel]);
+
+  useEffect(()=>{
+    fetch("/api/discounts",{cache:"no-store"})
+      .then(r=>r.json())
+      .then(j=>setDiscounts(j.discounts||[]))
+      .catch(()=>setDiscounts([]));
+
+    try{
+      const raw=localStorage.getItem(CUSTOMER_KEY);
+      if(!raw)return;
+      const c=JSON.parse(raw);
+      if(!c?.id||!c?.email)return;
+      setCustomer(c);
+      fetch(`/api/customer-rewards?customerId=${encodeURIComponent(c.id)}&email=${encodeURIComponent(c.email)}`,{cache:"no-store"})
+        .then(r=>r.json())
+        .then(j=>setRewards(j.rewards||[]))
+        .catch(()=>setRewards([]));
+    }catch{}
+  },[]);
+
+  const selected=useMemo(()=>[sel.facial,sel.body,sel.eyebrow].filter(Boolean),[sel]);
+  const rewardFor=s=>rewards.find(r=>r.service_id===s.id)||null;
+  const best=s=>{
+    if(rewardFor(s))return null;
+    return discounts
+      .filter(d=>(d.service_ids||[]).includes(s.id))
+      .sort((a,b)=>Number(b.value)-Number(a.value))[0]||null;
+  };
+
+  const pricing=selected.map(s=>{
+    const reward=rewardFor(s);
+    const d=best(s);
+    return {s,reward,d,amount:reward?s.price:discountAmount(d,s.price)};
+  });
+
+  const regular=selected.reduce((a,s)=>a+s.price,0)
+    +sel.facialAddons.reduce((a,id)=>a+(facialAddons.find(x=>x.id===id)?.price||0),0)
+    +sel.bodyAddons.reduce((a,id)=>a+(bodyAddons.find(x=>x.id===id)?.price||0),0);
+  const discountTotal=pricing.reduce((a,x)=>a+x.amount,0);
+  const total=Math.max(0,regular-discountTotal);
+
+  function groupFor(s){
+    if(sections[0][1].some(x=>x.id===s.id))return "facial";
+    if(sections[1][1].some(x=>x.id===s.id))return "body";
+    return "eyebrow";
+  }
+
+  function pick(s){setSel(v=>({...v,[groupFor(s)]:s}));}
+
+  function remove(s){
+    const g=groupFor(s);
+    setSel(v=>({...v,[g]:null,...(g==="facial"?{facialAddons:[]}:{}) ,...(g==="body"?{bodyAddons:[]}:{})}));
+  }
+
+  function query(){
+    const p=new URLSearchParams();
+    if(sel.facial)p.set("facial",sel.facial.id);
+    if(sel.body)p.set("body",sel.body.id);
+    if(sel.eyebrow)p.set("eyebrow","1");
+    if(sel.facialAddons.length)p.set("fa",sel.facialAddons.join(","));
+    if(sel.bodyAddons.length)p.set("ba",sel.bodyAddons.join(","));
+    return p.toString();
+  }
+
+  return (
+    <div className="selectionDock">
+      {customer && (
+        <div className="success" style={{marginBottom:20,textAlign:"left"}}>
+          <strong>Hi {customer.name} ✨</strong>
+          {rewards.length ? (
+            <p style={{margin:"6px 0 0"}}>You have {rewards.length} winner gift{rewards.length===1?"":"s"}. Look for <b>YOUR GIFT · FREE</b> on your eligible service{rewards.length===1?"":"s"}.</p>
+          ) : (
+            <p style={{margin:"6px 0 0"}}>Your profile is connected. Any future offers or rewards will appear here automatically.</p>
+          )}
+        </div>
+      )}
+
+      <div className="serviceSections">
+        {sections.map(([title,items])=>(
+          <div key={title} className={`serviceSection ${title==="Eyebrow Threading"?"eyebrowSection":""}`}>
+            <h2>{title}</h2>
+            <div className="serviceGrid">
+              {items.map(s=>(
+                <Card
+                  key={s.id}
+                  s={s}
+                  discount={best(s)}
+                  reward={rewardFor(s)}
+                  selected={[sel.facial?.id,sel.body?.id,sel.eyebrow?.id].includes(s.id)}
+                  onSelect={pick}
+                  onRemove={remove}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bookingbox selectionBox">
+        <strong>Your Selection</strong>
+        {selected.length ? (
+          <div className="selectionList">
+            {selected.map(s=>{
+              const d=best(s);
+              const reward=rewardFor(s);
+              const da=reward?s.price:discountAmount(d,s.price);
+              return (
+                <div className="selectionItem" key={s.id}>
+                  <span>
+                    {s.name} — {reward ? <><del>${s.price}</del> <strong>FREE</strong></> : d ? <><del>${s.price}</del> <strong>${(s.price-da).toFixed(2)}</strong></> : `$${s.price}`} · {s.duration} min
+                  </span>
+                  <button type="button" className="textRemove" onClick={()=>remove(s)}>Remove</button>
+                </div>
+              );
+            })}
+          </div>
+        ) : <p className="muted">Nothing selected yet.</p>}
+
+        <div className="row summaryRow">
+          <span>Appointment duration: {selected.reduce((a,s)=>a+s.duration,0)} min</span>
+          <strong>{discountTotal>0?<><del>${regular.toFixed(2)}</del> ${total.toFixed(2)}</>:`Total: $${total.toFixed(2)}`}</strong>
+        </div>
+
+        <Link
+          className="btn"
+          href={selected.length?`/booking?${query()}`:"/services"}
+          style={{marginTop:12,pointerEvents:selected.length?"auto":"none",opacity:selected.length?1:.5}}
+        >Continue Booking</Link>
+      </div>
+    </div>
+  );
+}
