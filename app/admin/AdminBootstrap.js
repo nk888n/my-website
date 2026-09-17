@@ -5,4 +5,5 @@ import AllCustomersControl from "./AllCustomersControl";
 import ActivityEnhancer from "./ActivityEnhancer";
 import WebsiteVisitorsWidget from "./WebsiteVisitorsWidget";
 import WinnerManager from "./WinnerManager";
-export default function AdminBootstrap(){const[ready,setReady]=useState(false);useEffect(()=>{const pin=sessionStorage.getItem("vale_admin_pin");if(!pin){setReady(true);return}fetch("/api/admin/expire-discounts",{method:"POST",headers:{"x-admin-pin":pin}}).finally(()=>setReady(true))},[]);return ready?<><AdminClient/><WinnerManager/><AllCustomersControl/><ActivityEnhancer/><WebsiteVisitorsWidget/></>:<div className="bookingbox"><p>Loading studio controls…</p></div>}
+import DiscountManager from "./DiscountManager";
+export default function AdminBootstrap(){const[ready,setReady]=useState(false);useEffect(()=>{const pin=sessionStorage.getItem("vale_admin_pin");if(!pin){setReady(true);return}fetch("/api/admin/expire-discounts",{method:"POST",headers:{"x-admin-pin":pin}}).finally(()=>setReady(true))},[]);return ready?<><AdminClient/><WinnerManager/><DiscountManager/><AllCustomersControl/><ActivityEnhancer/><WebsiteVisitorsWidget/></>:<div className="bookingbox"><p>Loading studio controls…</p></div>}
