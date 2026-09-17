@@ -10,7 +10,7 @@ export default function WinnerManager(){
  const[pin,setPin]=useState("");
  const[target,setTarget]=useState(null);
  const[customers,setCustomers]=useState([]),[winners,setWinners]=useState([]),[customerId,setCustomerId]=useState(""),[serviceId,setServiceId]=useState(""),[prizeName,setPrizeName]=useState(""),[expiresAt,setExpiresAt]=useState(""),[maxUses,setMaxUses]=useState("1"),[q,setQ]=useState(""),[msg,setMsg]=useState(""),[busy,setBusy]=useState(false);
- const services=useMemo(()=>allServices,[ ]);
+ const services=useMemo(()=>allServices,[]);
  const filtered=useMemo(()=>customers.filter(c=>!q||`${c.name} ${c.email}`.toLowerCase().includes(q.toLowerCase())).slice(0,20),[customers,q]);
  useEffect(()=>{
   const findTarget=()=>{const nodes=[...document.querySelectorAll(".adminSplit")];setTarget(nodes.find(n=>n.textContent.includes("Add Fee")&&n.textContent.includes("Discounts"))||null)};
@@ -45,15 +45,16 @@ export default function WinnerManager(){
  }
  if(!target)return null;
  const content=<section className="adminCard winnerManager" style={{margin:"18px auto",maxWidth:1200}}>
+  <style jsx>{`.winnerForm{display:grid;gap:12px;max-width:620px}.winnerForm label{display:grid;gap:6px}.winnerForm input,.winnerForm select{width:100%;box-sizing:border-box}.winnerForm .btn{width:max-content}.winnerSuggestions{z-index:30}`}</style>
   <div className="filterHeader"><div><div className="eyebrow">Rewards</div><h3 style={{marginBottom:4}}>Winner Gifts</h3><p className="muted small">Create a winner gift for a specific customer.</p></div></div>
-  <div className="winnerFormGrid">
+  <div className="winnerForm">
    <label>Winner / Customer<input placeholder="Search name or email…" value={q} onChange={e=>{setQ(e.target.value);setCustomerId("")}}/>{q&&<div className="customerSuggestions winnerSuggestions">{filtered.map(c=><button type="button" key={c.id} onClick={()=>{setCustomerId(c.id);setQ(`${c.name} · ${c.email}`)}}><strong>{c.name}</strong><span>{c.email}</span></button>)}</div>}{customerId&&<div className="statusGood small">Selected customer ✓</div>}</label>
    <label>Gift / Service<select value={serviceId} onChange={e=>setServiceId(e.target.value)}><option value="">Choose a service…</option>{services.map(s=><option key={s.id} value={s.id}>{s.name} — {money(s.price)}</option>)}</select></label>
    <label>Prize name<input placeholder="e.g. Free Facial" value={prizeName} onChange={e=>setPrizeName(e.target.value)}/></label>
    <label>Expires at <span className="muted small">(optional)</span><input type="datetime-local" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)}/></label>
    <label>Number of uses <span className="muted small">(optional)</span><input type="number" min="1" step="1" value={maxUses} onChange={e=>setMaxUses(e.target.value)} placeholder="1"/></label>
+   <button className="btn" disabled={busy} onClick={create}>{busy?"Saving…":"Add Winner Gift"}</button>
   </div>
-  <button className="btn" disabled={busy} onClick={create}>{busy?"Saving…":"Add Winner Gift"}</button>
   {msg&&<div className={msg.toLowerCase().includes("gift added")||msg.toLowerCase().includes("deactivated")?"success":"error"} style={{marginTop:12}}>{msg}</div>}
   <div style={{marginTop:22}}><h4>Winner history</h4>{winners.length?<div className="adminList">{winners.map(w=>{const person=Array.isArray(w.customer_profiles)?w.customer_profiles[0]:w.customer_profiles;const service=services.find(s=>s.id===w.service_id);return <div key={w.id} className="adminBooking"><div style={{padding:14,display:"grid",gap:5}}><strong>{person?.name||"Customer"} · {w.prize_name}</strong><span className="muted">{person?.email||""}</span><span>{service?.name||w.service_id} · FREE · Uses {w.uses||0}{w.max_uses?`/${w.max_uses}`:""}</span><span className="muted small">Expires: {fmt(w.expires_at)} · {w.active?"Active":"Inactive"}</span>{w.active&&<button className="textButton dangerText" disabled={busy} onClick={()=>deactivate(w.id)}>Deactivate gift</button>}</div></div>})}</div>:<p className="muted">No winner gifts yet.</p>}</div>
  </section>;
