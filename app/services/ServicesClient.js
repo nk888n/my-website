@@ -9,7 +9,7 @@ const CUSTOMER_KEY="vale-customer-session";
 
 function winnerType(r){return r?.prize_type || r?.reward_type || null}
 function winnerIsFree(r){return winnerType(r)==="free_service"}
-function winnerDiscount(r,price){if(winnerIsFree(r)||winnerType(r)!=="discount")return 0;const value=Number(r?.discountValue??r?.prize_value??r?.reward_value??0);return Math.min(price,Math.max(0,r?.discountKind==="percent"?price*value/100:value))}
+function winnerDiscount(r,price){if(winnerIsFree(r)||winnerType(r)!=="discount")return 0;const value=Number(r?.prize_value??r?.reward_value??r?.discountValue??0);return Math.min(price,Math.max(0,r?.discountKind==="percent"?price*value/100:value))}
 function discountAmount(d,price){
   if(!d)return 0;
   return Math.min(price,Math.max(0,d.kind==="percent"?price*Number(d.value)/100:Number(d.value)));
