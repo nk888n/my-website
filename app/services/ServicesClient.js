@@ -102,12 +102,11 @@ export default function ServicesClient({sections,initialSelection}){
   },[sel]);
 
   useEffect(()=>{
+    let dead=false;
     fetch("/api/discounts",{cache:"no-store"})
       .then(r=>r.json())
-      .then(j=>setDiscounts(j.discounts||[]))
-      .catch(()=>setDiscounts([]));
-
-    let dead=false;
+      .then(j=>{if(!dead)setDiscounts(j.discounts||[])})
+      .catch(()=>{if(!dead)setDiscounts([])});
     const syncCustomer=async()=>{
       try{
         const raw=localStorage.getItem(CUSTOMER_KEY);
@@ -132,6 +131,10 @@ export default function ServicesClient({sections,initialSelection}){
         localStorage.setItem(CUSTOMER_KEY,JSON.stringify(current));
         if(!dead){
           setCustomer(current);
+          fetch(`/api/discounts?customerId=${encodeURIComponent(current.id)}&email=${encodeURIComponent(current.email)}`,{cache:"no-store"})
+            .then(r=>r.json())
+            .then(j=>{if(!dead)setDiscounts([...(j.discounts||[]),...(j.customerDiscounts||[])])})
+            .catch(()=>{});
           fetch(`/api/customer-rewards?customerId=${encodeURIComponent(current.id)}&email=${encodeURIComponent(current.email)}`,{cache:"no-store"})
             .then(r=>r.json())
             .then(j=>{if(!dead)setRewards(j.rewards||[])})
