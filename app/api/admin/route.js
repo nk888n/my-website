@@ -47,8 +47,7 @@ if(action==="service_discount"){
  const {data:created,error}=await c.from("customer_discounts").insert(rows).select();
  if(error)throw error;
  const occasion=String(body.occasion||"").trim();
- const attachments=Array.isArray(body.attachments)?body.attachments.filter(a=>a&&a.content).slice(0,5):[];
- if(attachments.some(a=>String(a.content).length>7_500_000))return NextResponse.json({error:"Each email attachment must be 5 MB or smaller."},{status:400});
+ const attachments=Array.isArray(body.attachments)?body.attachments.filter(a=>a&&a.content).slice(0,5):[];\n  const attachmentBytes=attachments.reduce((sum,a)=>sum+String(a.content).length,0);\n  if(attachmentBytes>4_000_000)return NextResponse.json({error:"Email attachments are too large. Keep the total under 3 MB."},{status:400});
  const notified=body.notify===true;
  let sent=0,total=0;
  if(notified){
