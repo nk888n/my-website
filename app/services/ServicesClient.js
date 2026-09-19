@@ -7,8 +7,8 @@ import {facialAddons,bodyAddons,allServices} from "../../lib/services";
 const STORAGE_KEY="vale-beauty-service-selection";
 const CUSTOMER_KEY="vale-customer-session";
 
-function winnerIsFree(r){return (r?.prize_type||r?.reward_type)==="free_service" || (!r?.prize_type&&!r?.reward_type&&!r?.discountId)}
-function winnerDiscount(r,price){if(winnerIsFree(r)||(r?.prize_type||r?.reward_type)!=="discount")return 0;const value=Number(r?.discountValue??r?.prize_value??r?.reward_value??0);return Math.min(price,Math.max(0,r?.discountKind==="percent"?price*value/100:value))}
+function winnerIsFree(r){return r?.prize_type==="free_service" || r?.reward_type==="free_service"}
+function winnerDiscount(r,price){if(winnerIsFree(r)||(r?.prize_type!=="discount"&&r?.reward_type!=="discount"))return 0;const value=Number(r?.discountValue??r?.prize_value??r?.reward_value??0);return Math.min(price,Math.max(0,r?.discountKind==="percent"?price*value/100:value))}
 function discountAmount(d,price){
   if(!d)return 0;
   return Math.min(price,Math.max(0,d.kind==="percent"?price*Number(d.value)/100:Number(d.value)));
