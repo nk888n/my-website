@@ -159,7 +159,6 @@ export default function ServicesClient({sections,initialSelection}){
   const selected=useMemo(()=>[sel.facial,sel.body,sel.eyebrow].filter(Boolean),[sel]);
   const rewardFor=s=>rewards.find(r=>r.service_id===s.id)||null;
   const best=s=>{
-    if(rewardFor(s))return null;
     return discounts
       .filter(d=>(d.service_ids||[]).includes(s.id))
       .sort((a,b)=>Number(b.value)-Number(a.value))[0]||null;
