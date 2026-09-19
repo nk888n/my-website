@@ -7,6 +7,8 @@ import {facialAddons,bodyAddons,allServices} from "../../lib/services";
 const STORAGE_KEY="vale-beauty-service-selection";
 const CUSTOMER_KEY="vale-customer-session";
 
+function winnerIsFree(r){return (r?.prize_type||r?.reward_type||"free_service")==="free_service"}
+function winnerDiscount(r,price){if(winnerIsFree(r))return 0;if((r?.prize_type||r?.reward_type)!=="discount")return 0;return Math.min(price,Math.max(0,Number(r?.prize_value??r?.reward_value??0)))}
 function discountAmount(d,price){
   if(!d)return 0;
   return Math.min(price,Math.max(0,d.kind==="percent"?price*Number(d.value)/100:Number(d.value)));
@@ -14,7 +16,7 @@ function discountAmount(d,price){
 
 function Card({s,onSelect,selected,onRemove,discount,reward}){
   const [open,setOpen]=useState(false);
-  const newPrice=reward?0:Math.max(0,s.price-discountAmount(discount,s.price));
+  const free=winnerIsFree(reward),winnerOff=winnerDiscount(reward,s.price); const newPrice=free?0:Math.max(0,s.price-discountAmount(discount,s.price)-winnerOff);
 
   return (
     <article className={`card ${open?"expanded":""}`}>
