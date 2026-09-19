@@ -28,7 +28,7 @@ export async function POST(req){
    const duplicateServices=new Set();
    for(const r of g.rules)for(const id of r.serviceIds){if(duplicateServices.has(id))return NextResponse.json({error:"A service can only appear once within the same discount group."},{status:400});duplicateServices.add(id)}
   }
-  const customerIds=[...new Set(groups.flatMap(g=>g.customerIds))],c=db();
+  const customerIds=[...new Set(groups.flatMap(g=>g.customerIds))],c=db();\n  const attachments=Array.isArray(body.attachments)?body.attachments.filter(a=>a&&a.content).slice(0,5):[];\n  if(attachments.some(a=>String(a.content).length>7_500_000))return NextResponse.json({error:"Each email attachment must be 5 MB or smaller."},{status:400});
   const {data:people,error:peopleError}=await c.from("customer_profiles").select("id,name,email").in("id",customerIds);if(peopleError)throw peopleError;
   if((people||[]).length!==customerIds.length)return NextResponse.json({error:"One selected customer profile could not be found."},{status:400});
   const personMap=new Map(people.map(p=>[p.id,p]));
@@ -56,9 +56,9 @@ export async function POST(req){
    const message=buildDiscountMessage({name:person.name,occasion,groups:ownRules,allServices,businessName:business.name,audience:"personal"});
    const site=String(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/+$/g,"");
    const registerLink=site+"/register?customerId="+encodeURIComponent(person.id)+"&email="+encodeURIComponent(person.email)+"&name="+encodeURIComponent(person.name);
-   const html=message.html+'<p><a href="'+registerLink+'" style="display:inline-block;background:#ad6f7c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px">Connect My Profile &amp; View My Offers</a></p>';
-   await c.from("admin_audit_log").insert({action:"add_customer_discount",entity_type:"customer_discount",entity_id:person.id,email:person.email,details:{customerId:person.id,customerName:person.name,groups:ownGroups.map(g=>({customerIds:g.customerIds,rules:g.rules,startsAt:g.startsAt,expiresAt:g.expiresAt,maxUses:g.maxUses,note:g.note})),createdCount:rows.length,notify:body.notify===true,occasion:occasion||null,occasionType:message.occasionType,messageSubject:message.subject,messageHtml:html}}).then(({error})=>{if(error)console.error("DISCOUNT AUDIT FAILED",error)});
-   if(body.notify===true){try{await sendMail({to:person.email,subject:message.subject,html});sent++}catch(error){failed++;console.error("GROUPED DISCOUNT EMAIL FAILED",person.email,error)}}
+   const html=(body.customHtml?String(body.customHtml):message.html)+'<p><a href="'+registerLink+'" style="display:inline-block;background:#ad6f7c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px">Connect My Profile &amp; View My Offers</a></p>';\n   const subject=String(body.customSubject||message.subject).trim()||message.subject;
+   await c.from("admin_audit_log").insert({action:"add_customer_discount",entity_type:"customer_discount",entity_id:person.id,email:person.email,details:{customerId:person.id,customerName:person.name,groups:ownGroups.map(g=>({customerIds:g.customerIds,rules:g.rules,startsAt:g.startsAt,expiresAt:g.expiresAt,maxUses:g.maxUses,note:g.note})),createdCount:rows.length,notify:body.notify===true,occasion:occasion||null,occasionType:message.occasionType,messageSubject:subject,messageHtml:html,customMessage:!!body.customHtml,attachmentCount:attachments.length}}).then(({error})=>{if(error)console.error("DISCOUNT AUDIT FAILED",error)});
+   if(body.notify===true){try{await sendMail({to:person.email,subject,html,attachments});sent++}catch(error){failed++;console.error("GROUPED DISCOUNT EMAIL FAILED",person.email,error)}}
   }
   return NextResponse.json({message:`Discounts activated for ${people.length} customer${people.length===1?"":"s"}. ${created} discount${created===1?"":"s"} created. ${sent} email${sent===1?"":"s"} sent${failed?`; ${failed} email${failed===1?"":"s"} could not be sent`:""}.`});
  }catch(error){console.error(error);return NextResponse.json({error:"Could not activate grouped discounts."},{status:500})}
