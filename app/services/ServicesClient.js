@@ -159,15 +159,20 @@ export default function ServicesClient({sections,initialSelection}){
 
   const selected=useMemo(()=>[sel.facial,sel.body,sel.eyebrow].filter(Boolean),[sel]);
   const rewardFor=s=>rewards.find(r=>r.service_id===s.id)||null;
-  const best=s=>{
-    return discounts
-      .filter(d=>(d.service_ids||[]).includes(s.id))
-      .sort((a,b)=>Number(b.value)-Number(a.value))[0]||null;
+  const best=(s,reward)=>{
+    const eligible=discounts.filter(d=>(d.service_ids||[]).includes(s.id));
+    if(reward && winnerType(reward)==="discount"){
+      const winnerValue=Number(reward.discountValue??reward.prize_value??reward.reward_value??0);
+      const winnerKind=reward.discountKind||"percent";
+      return winnerValue>0&&winnerValue<100?{id:reward.discountId||"winner",kind:winnerKind,value:winnerValue,scope:"customer",winner:true}:null;
+    }
+    if(reward && winnerIsFree(reward)) return null;
+    return eligible.filter(d=>Number(d.value)<100).sort((a,b)=>Number(b.value)-Number(a.value))[0]||null;
   };
 
   const pricing=selected.map(s=>{
     const reward=rewardFor(s);
-    const d=best(s);
+    const d=best(s,rewardFor(s));
     const free=winnerIsFree(reward) && !d; const winnerOff=free?0:winnerDiscount(reward,s.price); const amount=free?s.price:discountAmount(d,s.price)+winnerOff; return {s,reward,d,amount};
   });
 
@@ -222,7 +227,7 @@ export default function ServicesClient({sections,initialSelection}){
                 <Card
                   key={s.id}
                   s={s}
-                  discount={best(s)}
+                  discount={best(s,rewardFor(s))}
                   reward={rewardFor(s)}
                   selected={[sel.facial?.id,sel.body?.id,sel.eyebrow?.id].includes(s.id)}
                   onSelect={pick}
@@ -239,7 +244,7 @@ export default function ServicesClient({sections,initialSelection}){
         {selected.length ? (
           <div className="selectionList">
             {selected.map(s=>{
-              const d=best(s);
+              const d=best(s,rewardFor(s));
               const reward=rewardFor(s);
               const free=winnerIsFree(reward) && !d, winnerOff=free?0:winnerDiscount(reward,s.price);
               const da=free?s.price:discountAmount(d,s.price)+winnerOff;
