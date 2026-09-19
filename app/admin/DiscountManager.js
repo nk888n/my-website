@@ -6,11 +6,12 @@ const money=v=>`$${Number(v||0).toFixed(2)}`;
 const blankRule=()=>({serviceIds:[],kind:"percent",value:""});
 const blankGroup=()=>({customerIds:[],rules:[blankRule()],startsAt:"",expiresAt:"",maxUses:"",note:"",sameDates:false});
 function CustomerPicker({customers,value,onChange}){
- const[q,setQ]=useState(""),[remote,setRemote]=useState([]);
- const selected=customers.filter(c=>value.includes(c.id));
+ const[q,setQ]=useState(""),[remote,setRemote]=useState([]),[known,setKnown]=useState([]);
+ const mergedKnown=[...customers,...known,...remote].filter((c,i,a)=>c?.id&&!a.some((x,j)=>j<i&&x.id===c.id));
+ const selected=mergedKnown.filter(c=>value.includes(c.id));
  const local=customers.filter(c=>!q||`${c.name||""} ${c.email||""}`.toLowerCase().includes(q.toLowerCase()));
  const merged=[...local,...remote.filter(r=>!local.some(c=>c.id===r.id))].slice(0,15);
- useEffect(()=>{const term=q.trim();if(!term){setRemote([]);return}const controller=new AbortController();const timer=setTimeout(async()=>{try{const r=await fetch(`/api/customers?q=${encodeURIComponent(term)}`,{cache:"no-store",signal:controller.signal});const j=await r.json();setRemote(j.customers||[])}catch{if(!controller.signal.aborted)setRemote([])}},160);return()=>{clearTimeout(timer);controller.abort()}},[q]);
+ useEffect(()=>{const term=q.trim();if(!term){setRemote([]);return}const controller=new AbortController();const timer=setTimeout(async()=>{try{const r=await fetch(`/api/customers?q=${encodeURIComponent(term)}`,{cache:"no-store",signal:controller.signal});const j=await r.json();setRemote(j.customers||[]);setKnown(prev=>[...prev,...(j.customers||[])])}catch{if(!controller.signal.aborted)setRemote([])}},160);return()=>{clearTimeout(timer);controller.abort()}},[q]);
  return <div className="discountCustomerPicker"><div className="discountSelectedList">{selected.map(c=><button type="button" className="selectedCustomer" key={c.id} onClick={()=>onChange(value.filter(id=>id!==c.id))}>{c.name} · {c.email} ×</button>)}</div><input placeholder="Search name or email…" value={q} onChange={e=>setQ(e.target.value)}/>{q&&<div className="customerSuggestions">{merged.map(c=><button type="button" key={c.id} onClick={()=>{if(!value.includes(c.id))onChange([...value,c.id]);setQ("")}}><strong>{c.name}</strong><span>{c.email}</span></button>)}{!merged.length&&<div className="muted small" style={{padding:10}}>No customer found.</div>}</div>}</div>;
 }
 function ServiceChoices({value,onChange}){return <div className="discountServiceChoices">{allServices.map(s=><label key={s.id} className="checkLine"><input type="checkbox" checked={value.includes(s.id)} onChange={()=>onChange(value.includes(s.id)?value.filter(id=>id!==s.id):[...value,s.id])}/><span>{s.name} — {money(s.price)}</span></label>)}</div>}
