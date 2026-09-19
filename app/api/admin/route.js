@@ -55,13 +55,14 @@ if(action==="service_discount"){
    const byEmail=new Map();for(const p of people||[]){const email=String(p.email||"").trim().toLowerCase();if(email&&!byEmail.has(email))byEmail.set(email,p)}const uniquePeople=[...byEmail.values()];
    total=uniquePeople.length;
    for(const p of uniquePeople){
+     let delivered=false;
      const message=buildDiscountMessage({name:p.name,occasion,groups,allServices,businessName:business.name,audience:"everyone"});
      const discountRows=groups.map(g=>({kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,service_ids:g.serviceIds}));
      try{
        const result=await sendMail({to:p.email,subject:message.subject,html:message.html,discountRows});
-       if(!result?.rejected?.length)sent++;
+       if(!result?.rejected?.length){sent++;delivered=true;}
      }catch(e){console.error("SERVICE DISCOUNT EMAIL FAILED",e)}
-     await audit(c,"send_service_discount_email","customer",p.id,p.email,{occasion:occasion||null,occasionType:message.occasionType,discountIds:(created||[]).map(d=>d.id),messageSubject:message.subject,messageHtml:message.html,sent:sent>0});
+     await audit(c,"send_service_discount_email","customer",p.id,p.email,{occasion:occasion||null,occasionType:message.occasionType,discountIds:(created||[]).map(d=>d.id),messageSubject:message.subject,messageHtml:message.html,sent:delivered});
    }
  }
  for(const d of created||[])await audit(c,"add_service_discount","service_discount",d.id,null,{...d,groupedRules:groups,occasion:occasion||null,notify:notified,notifiedCount:sent});
