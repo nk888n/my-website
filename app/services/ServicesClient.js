@@ -7,7 +7,7 @@ import {facialAddons,bodyAddons,allServices} from "../../lib/services";
 const STORAGE_KEY="vale-beauty-service-selection";
 const CUSTOMER_KEY="vale-customer-session";
 
-function winnerIsFree(r){return (r?.prize_type||r?.reward_type||"free_service")==="free_service"}
+function winnerIsFree(r){return (r?.prize_type||r?.reward_type)==="free_service" || (!r?.prize_type&&!r?.reward_type&&!r?.discountId)}
 function winnerDiscount(r,price){if(winnerIsFree(r)||(r?.prize_type||r?.reward_type)!=="discount")return 0;const value=Number(r?.discountValue??r?.prize_value??r?.reward_value??0);return Math.min(price,Math.max(0,r?.discountKind==="percent"?price*value/100:value))}
 function discountAmount(d,price){
   if(!d)return 0;
@@ -35,9 +35,9 @@ function Card({s,onSelect,selected,onRemove,discount,reward}){
             ) : `$${s.price}`}
           </span>
         </div>
-        {reward ? (
+        {free ? (
           <div className="discountBadge" style={{background:"#fbf2df",color:"#8d6b2f"}}>YOUR GIFT · FREE</div>
-        ) : discount ? (
+        ) : (discount || winnerOff>0) ? (
           <div className="discountBadge">
             {winnerOff>0 ? "WINNER "+Number(reward?.prize_value??reward?.reward_value??0)+"% OFF" : (discount.kind==="percent"?`SPECIAL ${discount.value}% OFF`:`SPECIAL ${Number(discount.value).toFixed(2)} OFF`)}
           </div>
@@ -168,7 +168,7 @@ export default function ServicesClient({sections,initialSelection}){
   const pricing=selected.map(s=>{
     const reward=rewardFor(s);
     const d=best(s);
-    return {s,reward,d,amount:reward?s.price:discountAmount(d,s.price)};
+    const free=winnerIsFree(reward); const winnerOff=winnerDiscount(reward,s.price); const amount=free?s.price:discountAmount(d,s.price)+winnerOff; return {s,reward,d,amount};
   });
 
   const regular=selected.reduce((a,s)=>a+s.price,0)
@@ -206,7 +206,7 @@ export default function ServicesClient({sections,initialSelection}){
         <div className="success" style={{marginBottom:20,textAlign:"left"}}>
           <strong>Hi {customer.name} ✨</strong>
           {rewards.length ? (
-            <p style={{margin:"6px 0 0"}}>You have {rewards.length} winner gift{rewards.length===1?"":"s"}. Look for <b>YOUR GIFT · FREE</b> on your eligible service{rewards.length===1?"":"s"}.</p>
+            <p style={{margin:"6px 0 0"}}>You have {rewards.length} winner offer{rewards.length===1?"":"s"}. Look for your special offer on your eligible service{rewards.length===1?"":"s"}.</p>
           ) : (
             <p style={{margin:"6px 0 0"}}>Your profile is connected. Any future offers or rewards will appear here automatically.</p>
           )}
