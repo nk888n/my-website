@@ -47,6 +47,8 @@ if(action==="service_discount"){
  const {data:created,error}=await c.from("customer_discounts").insert(rows).select();
  if(error)throw error;
  const occasion=String(body.occasion||"").trim();
+ const attachments=Array.isArray(body.attachments)?body.attachments.filter(a=>a&&a.content).slice(0,5):[];
+ if(attachments.some(a=>String(a.content).length>7_500_000))return NextResponse.json({error:"Each email attachment must be 5 MB or smaller."},{status:400});
  const notified=body.notify===true;
  let sent=0,total=0;
  if(notified){
@@ -57,12 +59,14 @@ if(action==="service_discount"){
    for(const p of uniquePeople){
      let delivered=false;
      const message=buildDiscountMessage({name:p.name,occasion,groups,allServices,businessName:business.name,audience:"everyone"});
+     const emailSubject=String(body.customSubject||message.subject).trim()||message.subject;
+     const emailHtml=String(body.customHtml||message.html);
      const discountRows=groups.map(g=>({kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,service_ids:g.serviceIds}));
      try{
-       const result=await sendMail({to:p.email,subject:message.subject,html:message.html,discountRows});
+       const result=await sendMail({to:p.email,subject:emailSubject,html:emailHtml,discountRows,attachments});
        if(!result?.rejected?.length){sent++;delivered=true;}
      }catch(e){console.error("SERVICE DISCOUNT EMAIL FAILED",e)}
-     await audit(c,"send_service_discount_email","customer",p.id,p.email,{occasion:occasion||null,occasionType:message.occasionType,discountIds:(created||[]).map(d=>d.id),messageSubject:message.subject,messageHtml:message.html,sent:delivered});
+     await audit(c,"send_service_discount_email","customer",p.id,p.email,{occasion:occasion||null,occasionType:message.occasionType,discountIds:(created||[]).map(d=>d.id),messageSubject:emailSubject,messageHtml:emailHtml,customMessage:!!body.customHtml,attachmentCount:attachments.length,sent:delivered});
    }
  }
  for(const d of created||[])await audit(c,"add_service_discount","service_discount",d.id,null,{...d,groupedRules:groups,occasion:occasion||null,notify:notified,notifiedCount:sent});
