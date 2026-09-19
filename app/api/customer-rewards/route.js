@@ -16,9 +16,17 @@ export async function GET(req){
     if(pe)throw pe;
     if(!profile||String(profile.email||"").toLowerCase()!==email)return NextResponse.json({rewards:[]});
     const now=DateTime.now().setZone(business.timezone);
-    const {data,error}=await c.from("winners").select("id,prize_name,service_id,prize_type,prize_value,reward_type,reward_value,starts_at,expires_at,max_uses,uses,active").eq("customer_id",customerId).eq("active",true).lte("starts_at",now.toUTC().toISO()).order("created_at",{ascending:false});
+    const {data,error}=await c.from("winners").select("id,prize_name,service_id,prize_type,prize_value,reward_type,reward_value,discount_id,starts_at,expires_at,max_uses,uses,active").eq("customer_id",customerId).eq("active",true).lte("starts_at",now.toUTC().toISO()).order("created_at",{ascending:false});
     if(error)throw error;
     const rewards=(data||[]).filter(w=>(!w.expires_at||DateTime.fromISO(w.expires_at)>now)&&(!w.max_uses||Number(w.uses||0)<Number(w.max_uses))).map(w=>({...w,service:allServices.find(s=>s.id===w.service_id)||null})).filter(w=>w.service);
-    return NextResponse.json({customer:{id:profile.id,name:profile.name,email:profile.email},rewards});
+    const discountIds=(data||[]).map(w=>w.discount_id).filter(Boolean);
+    let discountMap=new Map();
+    if(discountIds.length){
+      const {data:discounts,error:de}=await c.from("customer_discounts").select("id,kind,value").in("id",discountIds).eq("customer_id",customerId);
+      if(de)throw de;
+      discountMap=new Map((discounts||[]).map(d=>[d.id,d]));
+    }
+    const enriched=rewards.map(w=>{const d=discountMap.get(w.discount_id);return {...w,discountKind:d?.kind||null,discountValue:d?.value??null}});
+    return NextResponse.json({customer:{id:profile.id,name:profile.name,email:profile.email},rewards:enriched});
   }catch(e){console.error(e);return NextResponse.json({rewards:[]})}
 }
