@@ -13,7 +13,7 @@ function validDiscount(d,now=Date.now()){
 }
 function winnerType(r){return r?.prize_type || r?.reward_type || null}
 function winnerIsFree(r){return winnerType(r)==="free_service"}
-function winnerDiscountAmount(r,price){if(winnerIsFree(r))return price;if(winnerType(r)!=="discount")return 0;const value=Number(r?.prize_value??r?.reward_value??r?.discountValue??0);return Math.min(price,Math.max(0,r?.discountKind==="percent"?price*value/100:value))}
+function winnerDiscountAmount(r,price){if(winnerIsFree(r))return price;if(winnerType(r)!=="discount")return 0;const value=Number(r?.prize_value??r?.reward_value??r?.discountValue??0);const kind=r?.discountKind||"percent";return Math.min(price,Math.max(0,kind==="percent"?price*value/100:value))}
 export default function BookingForm({initialData}){
  const[data,setData]=useState(initialData),[blocked,setBlocked]=useState([]),[available,setAvailable]=useState(null),[loadingSlots,setLoadingSlots]=useState(false),[availabilityError,setAvailabilityError]=useState(""),[msg,setMsg]=useState(""),[submitted,setSubmitted]=useState(false),[profiles,setProfiles]=useState([]),[profileLoading,setProfileLoading]=useState(false),[feeWarning,setFeeWarning]=useState(null),[discounts,setDiscounts]=useState([]),[customerDiscounts,setCustomerDiscounts]=useState([]),[rewards,setRewards]=useState([]),[confirming,setConfirming]=useState(false),[discountNow,setDiscountNow]=useState(Date.now());
  const selected=useMemo(()=>[facialTreatments.find(s=>s.id===data.facial),bodyTreatments.find(s=>s.id===data.body),data.eyebrow?eyebrow:null].filter(Boolean),[data.facial,data.body,data.eyebrow]);
