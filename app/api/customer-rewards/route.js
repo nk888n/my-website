@@ -26,7 +26,7 @@ export async function GET(req){
       if(de)throw de;
       discountMap=new Map((discounts||[]).map(d=>[d.id,d]));
     }
-    const enriched=rewards.map(w=>{const d=discountMap.get(w.discount_id);const dv=d?.value??null;const dk=d?.kind||null;const numeric=Number(dv);const hasDiscount=d&&Number.isFinite(numeric)&&numeric<100;return {...w,prize_type:hasDiscount?"discount":w.prize_type,reward_type:hasDiscount?"discount":w.reward_type,prize_value:hasDiscount?dv:w.prize_value,reward_value:hasDiscount?dv:w.reward_value,discountId:w.discount_id||null,discountKind:dk,discountValue:dv}});
+    const enriched=rewards.map(w=>{const d=discountMap.get(w.discount_id);const dv=d?.value??null;const dk=d?.kind||null;const rawValue=dv??w.prize_value??w.reward_value??null;const numeric=Number(rawValue);const explicitDiscount=w.prize_type==="discount"||w.reward_type==="discount";const hasDiscount=explicitDiscount||(Number.isFinite(numeric)&&numeric>=0&&numeric<100);return {...w,prize_type:hasDiscount?"discount":"free_service",reward_type:hasDiscount?"discount":"free_service",prize_value:hasDiscount?rawValue:w.prize_value,reward_value:hasDiscount?rawValue:w.reward_value,discountId:w.discount_id||null,discountKind:dk||"percent",discountValue:hasDiscount?rawValue:dv}});
     return NextResponse.json({customer:{id:profile.id,name:profile.name,email:profile.email},rewards:enriched});
   }catch(e){console.error(e);return NextResponse.json({rewards:[]})}
 }
