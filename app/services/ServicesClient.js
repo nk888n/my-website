@@ -28,9 +28,9 @@ function Card({s,onSelect,selected,onRemove,discount,reward}){
         <div className="row">
           <span>{s.duration} min</span>
           <span className="price">
-            {reward ? (
+            {free ? (
               <><del>${s.price}</del> <strong>FREE</strong></>
-            ) : discount ? (
+            ) : (discount || winnerOff>0) ? (
               <><del>${s.price}</del> <strong>${newPrice.toFixed(2)}</strong></>
             ) : `$${s.price}`}
           </span>
@@ -39,7 +39,7 @@ function Card({s,onSelect,selected,onRemove,discount,reward}){
           <div className="discountBadge" style={{background:"#fbf2df",color:"#8d6b2f"}}>YOUR GIFT · FREE</div>
         ) : discount ? (
           <div className="discountBadge">
-            {discount.kind==="percent"?`SPECIAL ${discount.value}% OFF`:`SPECIAL $${Number(discount.value).toFixed(2)} OFF`}
+            {winnerOff>0 ? "WINNER "+Number(reward?.prize_value??reward?.reward_value??0)+"% OFF" : (discount.kind==="percent"?`SPECIAL ${discount.value}% OFF`:`SPECIAL ${Number(discount.value).toFixed(2)} OFF`)}
           </div>
         ) : null}
         <div className="cardactions">
@@ -57,7 +57,7 @@ function Card({s,onSelect,selected,onRemove,discount,reward}){
             {reward && (
               <div className="free">
                 <strong>🎁 Your Winner Gift</strong>
-                <p style={{margin:"6px 0"}}>{reward.prize_name} — this service is FREE for you.</p>
+                <p style={{margin:"6px 0"}}>{reward.prize_name} — {winnerIsFree(reward) ? "this service is FREE for you." : String(reward.prize_value??reward.reward_value??0)+"% off this service."}</p>
               </div>
             )}
             {s.tagline && <h3>{s.tagline}</h3>}
@@ -241,7 +241,8 @@ export default function ServicesClient({sections,initialSelection}){
             {selected.map(s=>{
               const d=best(s);
               const reward=rewardFor(s);
-              const da=reward?s.price:discountAmount(d,s.price);
+              const free=winnerIsFree(reward), winnerOff=winnerDiscount(reward,s.price);
+              const da=free?s.price:discountAmount(d,s.price)+winnerOff;
               return (
                 <div className="selectionItem" key={s.id}>
                   <span>
