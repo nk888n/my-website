@@ -8,9 +8,16 @@ const siteUrl=()=>String(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:300
 const esc=v=>String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 export async function POST(req){
   try{
-    const b=await req.json(),name=clean(b.name),email=clean(b.email).toLowerCase();
+    const b=await req.json(),name=clean(b.name),email=clean(b.email).toLowerCase(),customerId=clean(b.customerId);
     if(name.length<2||!/^\S+@\S+\.\S+$/.test(email))return NextResponse.json({error:"Please enter your full name and a valid email."},{status:400});
     const c=db();
+    if(customerId){
+      const {data:invited,error:ie}=await c.from("customer_profiles").select("id,name,email,phone,address,internal_notes").eq("id",customerId).maybeSingle();
+      if(ie)throw ie;
+      if(!invited||String(invited.email||"").trim().toLowerCase()!==email||String(invited.name||"").trim().toLowerCase()!==name.toLowerCase())
+        return NextResponse.json({error:"This offer link does not match the customer profile."},{status:400});
+      return NextResponse.json({ok:true,customer:invited,message:"Your VALE BEAUTY profile is connected to your special offers."});
+    }
     const {data:matches,error:me}=await c.from("customer_profiles").select("id,name,email,phone,address,internal_notes").ilike("email",email).order("name");
     if(me)throw me;
     const exact=(matches||[]).find(p=>p.name.trim().toLowerCase()===name.toLowerCase());
