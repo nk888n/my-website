@@ -30,7 +30,7 @@ if(action==="customer_discount"){
  const starts=body.startsAt?DateTime.fromISO(String(body.startsAt),{zone:business.timezone}):DateTime.now().setZone(business.timezone),expires=body.expiresAt?DateTime.fromISO(String(body.expiresAt),{zone:business.timezone}):null;if(!starts.isValid||expires&&!expires.isValid||expires&&expires<=starts)return NextResponse.json({error:"Choose valid discount dates."},{status:400});
  const discountNote=body.occasion?("Occasion: "+String(body.occasion).trim()+(body.note?" — "+String(body.note).trim():"")):(body.note||null);const rows=[];for(const p of people)for(const g of groups)rows.push({customer_id:p.id,email:p.email.toLowerCase(),kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,note:discountNote,scope:"customer",service_ids:g.serviceIds,updated_at:new Date().toISOString()});
  const {error}=await c.from("customer_discounts").insert(rows);if(error)throw error;
- const notified=body.notify===true;
+ const notified=true;
  for(const p of people){
    const message=buildDiscountMessage({name:p.name,occasion:body.occasion||"",groups,allServices,businessName:business.name,audience:"personal"});
    const discountRows=groups.map(g=>({kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,service_ids:g.serviceIds}));
