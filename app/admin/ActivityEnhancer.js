@@ -26,7 +26,7 @@ function activityDetails(row){
  }
  if(row.action==="add_service_discount")return [(d.kind==="percent"?String(d.value)+"% OFF":"$"+Number(d.value||0).toFixed(2)+" OFF"),(d.serviceIds||[]).map(serviceName).join(", ")].filter(Boolean).join(" · ");
  if(row.action==="winner_created")return [d.prizeType?String(d.prizeType).replaceAll("_"," "):"",d.value!=null&&d.prizeType==="discount"?String(d.value)+"% OFF":"",Array.isArray(d.serviceNames)?d.serviceNames.join(", "):"",d.emailSent!=null?"Email: "+(d.emailSent?"Sent":"Failed"):""].filter(Boolean).join(" · ");
- if(row.action==="send_customer_email")return [d.subject?"Subject: "+d.subject:"",d.sent!=null?"Sent: "+d.sent+"/"+d.requested:""].filter(Boolean).join(" · ");
+ if(row.action==="send_customer_email")return [d.subject?"Subject: "+d.subject:"",d.sent!=null?"Sent: "+d.sent+"/"+d.requested:""].filter(Boolean).join(" · ");\n if(row.action==="winner_claimed")return [(d.prizes||[]).map(p=>{const value=p.value!=null?" · "+String(p.value):"";return (p.prizeName||p.prizeType||"Winner prize")+value}).join(" · "),d.customerId?"Profile connected":""];
  if(row.action==="customer_profile_created")return "New customer profile created";
  if(row.action==="update_customer_profile")return Object.entries(d).filter(([k])=>k!=="updated_at").map(([k,v])=>k+": "+String(v)).join(" · ");
  return "";
