@@ -107,17 +107,48 @@ export default function ServicesClient({sections,initialSelection}){
       .then(j=>setDiscounts(j.discounts||[]))
       .catch(()=>setDiscounts([]));
 
-    try{
-      const raw=localStorage.getItem(CUSTOMER_KEY);
-      if(!raw)return;
-      const c=JSON.parse(raw);
-      if(!c?.id||!c?.email)return;
-      setCustomer(c);
-      fetch(`/api/customer-rewards?customerId=${encodeURIComponent(c.id)}&email=${encodeURIComponent(c.email)}`,{cache:"no-store"})
-        .then(r=>r.json())
-        .then(j=>setRewards(j.rewards||[]))
-        .catch(()=>setRewards([]));
-    }catch{}
+    let dead=false;
+    const syncCustomer=async()=>{
+      try{
+        const raw=localStorage.getItem(CUSTOMER_KEY);
+        if(!raw){
+          if(!dead){setCustomer(null);setRewards([]);}
+          return;
+        }
+        const c=JSON.parse(raw);
+        if(!c?.id||!c?.email){
+          if(!dead){setCustomer(null);setRewards([]);}
+          return;
+        }
+        const res=await fetch(`/api/customers?email=${encodeURIComponent(c.email)}`,{cache:"no-store"});
+        const json=await res.json();
+        const profile=(json.customers||[]).find(p=>String(p.id)===String(c.id));
+        if(!profile){
+          localStorage.removeItem(CUSTOMER_KEY);
+          if(!dead){setCustomer(null);setRewards([]);}
+          return;
+        }
+        const current={id:profile.id,name:profile.name,email:profile.email};
+        localStorage.setItem(CUSTOMER_KEY,JSON.stringify(current));
+        if(!dead){
+          setCustomer(current);
+          fetch(`/api/customer-rewards?customerId=${encodeURIComponent(current.id)}&email=${encodeURIComponent(current.email)}`,{cache:"no-store"})
+            .then(r=>r.json())
+            .then(j=>{if(!dead)setRewards(j.rewards||[])})
+            .catch(()=>{if(!dead)setRewards([])});
+        }
+      }catch{
+        if(!dead){setCustomer(null);setRewards([]);}
+      }
+    };
+    syncCustomer();
+    window.addEventListener("storage",syncCustomer);
+    window.addEventListener("vale-customer-session-changed",syncCustomer);
+    return()=>{
+      dead=true;
+      window.removeEventListener("storage",syncCustomer);
+      window.removeEventListener("vale-customer-session-changed",syncCustomer);
+    };
   },[]);
 
   const selected=useMemo(()=>[sel.facial,sel.body,sel.eyebrow].filter(Boolean),[sel]);
