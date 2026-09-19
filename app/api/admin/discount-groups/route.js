@@ -3,6 +3,7 @@ import {createClient} from "@supabase/supabase-js";
 import {DateTime} from "luxon";
 import {sendMail} from "../../../../lib/mailer";
 import {business,allServices} from "../../../../lib/services";
+import {buildDiscountMessage} from "../../../../lib/discountMessages";
 const db=()=>createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
 const ok=req=>req.headers.get("x-admin-pin")===process.env.ADMIN_PIN;
 const safe=value=>String(value??"").replace(/[&<>\"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
@@ -44,18 +45,20 @@ export async function POST(req){
     if(!starts.isValid||(expires&&!expires.isValid)||(expires&&expires<=starts))return NextResponse.json({error:`Choose valid dates for ${person.name}.`},{status:400});
     const rulesForEmail=[];
     for(const r of g.rules){
-     for(const serviceId of r.serviceIds)rows.push({customer_id:person.id,email:person.email.toLowerCase(),kind:r.kind,value:r.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:g.maxUses,uses:0,active:true,note:g.note||null,scope:"customer",service_ids:[serviceId],updated_at:new Date().toISOString()});
+     for(const serviceId of r.serviceIds)rows.push({customer_id:person.id,email:person.email.toLowerCase(),kind:r.kind,value:r.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:g.maxUses,uses:0,active:true,note:(body.occasion?("Occasion: "+String(body.occasion).trim()+(g.note?" — "+g.note:"")):(g.note||null)),scope:"customer",service_ids:[serviceId],updated_at:new Date().toISOString()});
      rulesForEmail.push(r);
     }
     emailBlocks.push({starts,expires,rules:rulesForEmail});
    }
    const {error}=await c.from("customer_discounts").insert(rows);if(error)throw error;created+=rows.length;
-   const blocks=emailBlocks.map(block=>{const dateText=`<p><b>Valid:</b> ${safe(block.starts.toFormat("MMM d, yyyy h:mm a"))} → ${block.expires?safe(block.expires.toFormat("MMM d, yyyy h:mm a")):"No end date"}</p>`;const rules=block.rules.map(r=>{const value=r.kind==="percent"?`${r.value}% off`:`$${r.value.toFixed(2)} off`;const names=r.serviceIds.map(id=>allServices.find(s=>s.id===id)?.name).filter(Boolean);return `<div style="margin:10px 0"><p><b>${safe(value)}</b> on:</p><ul>${names.map(name=>`<li>${safe(name)}</li>`).join("")}</ul></div>`}).join("");return `<div style="margin:16px 0;padding:10px 0;border-top:1px solid #eaded9">${rules}${dateText}${block.rules[0]&&block.rules[0].kind?`<p><b>Maximum uses:</b> ${groups.find(g=>g.rules.some(r=>r===block.rules[0]))?.maxUses||"No limit"}</p>`:""}</div>`}).join("");
+   const ownRules=ownGroups.flatMap(g=>g.rules||[]);
+   const occasion=String(body.occasion||"").trim();
+   const message=buildDiscountMessage({name:person.name,occasion,groups:ownRules,allServices,businessName:business.name,audience:"personal"});
    const site=String(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/+$/g,"");
-   const registerLink=`${site}/register?customerId=${encodeURIComponent(person.id)}&email=${encodeURIComponent(person.email)}&name=${encodeURIComponent(person.name)}`;
-   const html=`<h2>You Have Special Offers ✨</h2><p>Hi ${safe(person.name)},</p><p>We prepared these offers especially for you:</p>${blocks}<p>Your profile will be connected to these offers when you use the button below. Your name and email will be matched to your VALE BEAUTY customer profile automatically.</p><p><a href="${registerLink}" style="display:inline-block;background:#ad6f7c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px">Connect My Profile &amp; View My Offers</a></p>`;
-   await c.from("admin_audit_log").insert({action:"add_customer_discount",entity_type:"customer_discount",entity_id:person.id,email:person.email,details:{customerId:person.id,customerName:person.name,groups:ownGroups.map(g=>({customerIds:g.customerIds,rules:g.rules,startsAt:g.startsAt,expiresAt:g.expiresAt,maxUses:g.maxUses,note:g.note})),createdCount:rows.length,notify:body.notify!==false}}).then(({error})=>{if(error)console.error("DISCOUNT AUDIT FAILED",error)});
-   if(body.notify!==false){try{await sendMail({to:person.email,subject:`Special Offers From ${business.name} ✨`,html});sent++}catch(error){failed++;console.error("GROUPED DISCOUNT EMAIL FAILED",person.email,error)}}
+   const registerLink=site+"/register?customerId="+encodeURIComponent(person.id)+"&email="+encodeURIComponent(person.email)+"&name="+encodeURIComponent(person.name);
+   const html=message.html+'<p><a href="'+registerLink+'" style="display:inline-block;background:#ad6f7c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px">Connect My Profile &amp; View My Offers</a></p>';
+   await c.from("admin_audit_log").insert({action:"add_customer_discount",entity_type:"customer_discount",entity_id:person.id,email:person.email,details:{customerId:person.id,customerName:person.name,groups:ownGroups.map(g=>({customerIds:g.customerIds,rules:g.rules,startsAt:g.startsAt,expiresAt:g.expiresAt,maxUses:g.maxUses,note:g.note})),createdCount:rows.length,notify:body.notify===true,occasion:occasion||null,occasionType:message.occasionType,messageSubject:message.subject,messageHtml:html}}).then(({error})=>{if(error)console.error("DISCOUNT AUDIT FAILED",error)});
+   if(body.notify===true){try{await sendMail({to:person.email,subject:message.subject,html});sent++}catch(error){failed++;console.error("GROUPED DISCOUNT EMAIL FAILED",person.email,error)}}
   }
   return NextResponse.json({message:`Discounts activated for ${people.length} customer${people.length===1?"":"s"}. ${created} discount${created===1?"":"s"} created. ${sent} email${sent===1?"":"s"} sent${failed?`; ${failed} email${failed===1?"":"s"} could not be sent`:""}.`});
  }catch(error){console.error(error);return NextResponse.json({error:"Could not activate grouped discounts."},{status:500})}
