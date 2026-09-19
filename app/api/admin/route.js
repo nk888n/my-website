@@ -43,7 +43,7 @@ if(action==="service_discount"){
  if(!groups.length||groups.some(g=>!g.serviceIds.length||!Number.isFinite(g.value)||g.value<=0||(g.kind==="percent"&&g.value>100)))return NextResponse.json({error:"Choose at least one service and a valid discount for every rule."},{status:400});
  const starts=body.startsAt?DateTime.fromISO(String(body.startsAt),{zone:business.timezone}):DateTime.now().setZone(business.timezone),expires=body.expiresAt?DateTime.fromISO(String(body.expiresAt),{zone:business.timezone}):null;
  if(!starts.isValid||expires&&!expires.isValid||expires&&expires<=starts)return NextResponse.json({error:"Choose valid discount dates."},{status:400});
- const discountNote=occasion?("Occasion: "+occasion+(body.note?" — "+String(body.note).trim():"")):(body.note||null);const rows=groups.map(g=>({customer_id:null,email:null,kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,note:discountNote,scope:"service",service_ids:g.serviceIds,updated_at:new Date().toISOString()}));
+ const discountNote=body.occasion?("Occasion: "+String(body.occasion).trim()+(body.note?" — "+String(body.note).trim():"")):(body.note||null);const rows=groups.map(g=>({customer_id:null,email:null,kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,note:discountNote,scope:"service",service_ids:g.serviceIds,updated_at:new Date().toISOString()}));
  const {data:created,error}=await c.from("customer_discounts").insert(rows).select();
  if(error)throw error;
  const occasion=String(body.occasion||"").trim();
