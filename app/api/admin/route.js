@@ -3,6 +3,7 @@ import {createClient} from "@supabase/supabase-js";
 import {DateTime} from "luxon";
 import {sendMail} from "../../../lib/mailer";
 import {business,allServices} from "../../../lib/services";
+import {buildDiscountMessage} from "../../../lib/discountMessages";
 const db=()=>createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
 const ok=req=>req.headers.get("x-admin-pin")===process.env.ADMIN_PIN;
 const safe=(v="")=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -29,10 +30,44 @@ if(action==="customer_discount"){
  const starts=body.startsAt?DateTime.fromISO(String(body.startsAt),{zone:business.timezone}):DateTime.now().setZone(business.timezone),expires=body.expiresAt?DateTime.fromISO(String(body.expiresAt),{zone:business.timezone}):null;if(!starts.isValid||expires&&!expires.isValid||expires&&expires<=starts)return NextResponse.json({error:"Choose valid discount dates."},{status:400});
  const rows=[];for(const p of people)for(const g of groups)rows.push({customer_id:p.id,email:p.email.toLowerCase(),kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,note:body.note||null,scope:"customer",service_ids:g.serviceIds,updated_at:new Date().toISOString()});
  const {error}=await c.from("customer_discounts").insert(rows);if(error)throw error;
- const ruleLabel=g=>{const names=g.serviceIds.map(id=>allServices.find(s=>s.id===id)?.name||id);const value=g.kind==="percent"?`${g.value}%`:`$${g.value.toFixed(2)}`;return `<li><b>${safe(value)} off</b> — ${names.map(safe).join(", ")}</li>`};
- for(const p of people){const messageSubject=`A Special Offer From ${business.name} ✨`,messageHtml=`<h2>You Have a Special Offer ✨</h2><p>Hi ${safe(p.name)},</p><p>Here are your special discounts:</p><ul>${groups.map(ruleLabel).join("")}</ul><p>The discount is applied automatically when you book using this email address.</p>`;await audit(c,"add_customer_discount","customer_discount",p.id,p.email,{groups,startsAt:starts.toISO(),expiresAt:expires?.toISO()||null,maxUses:body.maxUses||null,notify:body.notify!==false,customerId:p.id,customerName:p.name,messageSubject,messageHtml});if(body.notify!==false){try{await sendMail({to:p.email,subject:messageSubject,html:messageHtml})}catch(e){console.error("DISCOUNT EMAIL FAILED",e)}}}
- return NextResponse.json({message:`${groups.length} discount rule(s) activated for ${people.length} customer(s). One email was sent per customer.`})}
-if(action==="service_discount"){const groups=Array.isArray(body.discountGroups)&&body.discountGroups.length?body.discountGroups.map(g=>({serviceIds:Array.isArray(g.serviceIds)?g.serviceIds.map(String).filter(Boolean):[],kind:g.kind==="fixed"?"fixed":"percent",value:Number(g.value)})):[{serviceIds:Array.isArray(body.serviceIds)?body.serviceIds.map(String).filter(Boolean):[],kind:body.kind==="fixed"?"fixed":"percent",value:Number(body.value)}];if(!groups.length||groups.some(g=>!g.serviceIds.length||!Number.isFinite(g.value)||g.value<=0||(g.kind==="percent"&&g.value>100)))return NextResponse.json({error:"Choose at least one service and a valid discount for every rule."},{status:400});const starts=body.startsAt?DateTime.fromISO(String(body.startsAt),{zone:business.timezone}):DateTime.now().setZone(business.timezone),expires=body.expiresAt?DateTime.fromISO(String(body.expiresAt),{zone:business.timezone}):null;if(!starts.isValid||expires&&!expires.isValid||expires&&expires<=starts)return NextResponse.json({error:"Choose valid discount dates."},{status:400});const rows=groups.map(g=>({customer_id:null,email:null,kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,note:body.note||null,scope:"service",service_ids:g.serviceIds,updated_at:new Date().toISOString()}));const {data:created,error}=await c.from("customer_discounts").insert(rows).select();if(error)throw error;for(const d of created||[])await audit(c,"add_service_discount","service_discount",d.id,null,{...d,groupedRules:groups});return NextResponse.json({message:(created?.length||0)+" service discount rule(s) activated."})}if(action==="discount_toggle"){const id=String(body.id||""),{data:d,error}=await c.from("customer_discounts").select("*").eq("id",id).maybeSingle();if(error)throw error;if(!d)return NextResponse.json({error:"Discount not found."},{status:404});await c.from("customer_discounts").update({active:!d.active,updated_at:new Date().toISOString()}).eq("id",id);await audit(c,d.scope==="service"?"toggle_service_discount":"toggle_customer_discount","discount",id,d.email,{active:!d.active});return NextResponse.json({message:!d.active?"Discount activated.":"Discount deactivated."})}
+ const notified=body.notify===true;
+ for(const p of people){
+   const message=buildDiscountMessage({name:p.name,occasion:body.occasion||"",groups,allServices,businessName:business.name,audience:"personal"});
+   const discountRows=groups.map(g=>({kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,service_ids:g.serviceIds}));
+   await audit(c,"add_customer_discount","customer_discount",p.id,p.email,{groups,startsAt:starts.toISO(),expiresAt:expires?.toISO()||null,maxUses:body.maxUses||null,notify:notified,customerId:p.id,customerName:p.name,occasion:body.occasion||null,occasionType:message.occasionType,messageSubject:message.subject,messageHtml:message.html});
+   if(notified){try{await sendMail({to:p.email,subject:message.subject,html:message.html,discountRows})}catch(e){console.error("DISCOUNT EMAIL FAILED",e)}}
+ }
+ return NextResponse.json({message:groups.length+" discount rule(s) activated for "+people.length+" customer(s)."+(notified?" Emails were sent to the selected customers.":"")})}
+if(action==="service_discount"){
+ const groups=Array.isArray(body.discountGroups)&&body.discountGroups.length?body.discountGroups.map(g=>({serviceIds:Array.isArray(g.serviceIds)?g.serviceIds.map(String).filter(Boolean):[],kind:g.kind==="fixed"?"fixed":"percent",value:Number(g.value)})):[{serviceIds:Array.isArray(body.serviceIds)?body.serviceIds.map(String).filter(Boolean):[],kind:body.kind==="fixed"?"fixed":"percent",value:Number(body.value)}];
+ if(!groups.length||groups.some(g=>!g.serviceIds.length||!Number.isFinite(g.value)||g.value<=0||(g.kind==="percent"&&g.value>100)))return NextResponse.json({error:"Choose at least one service and a valid discount for every rule."},{status:400});
+ const starts=body.startsAt?DateTime.fromISO(String(body.startsAt),{zone:business.timezone}):DateTime.now().setZone(business.timezone),expires=body.expiresAt?DateTime.fromISO(String(body.expiresAt),{zone:business.timezone}):null;
+ if(!starts.isValid||expires&&!expires.isValid||expires&&expires<=starts)return NextResponse.json({error:"Choose valid discount dates."},{status:400});
+ const rows=groups.map(g=>({customer_id:null,email:null,kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,note:body.note||null,scope:"service",service_ids:g.serviceIds,updated_at:new Date().toISOString()}));
+ const {data:created,error}=await c.from("customer_discounts").insert(rows).select();
+ if(error)throw error;
+ const occasion=String(body.occasion||"").trim();
+ const notified=body.notify===true;
+ let sent=0,total=0;
+ if(notified){
+   const {data:people,error:pe}=await c.from("customer_profiles").select("id,name,email").not("email","is",null).order("name");
+   if(pe)throw pe;
+   const uniquePeople=(people||[]).filter(p=>String(p.email||"").trim());
+   total=uniquePeople.length;
+   for(const p of uniquePeople){
+     const message=buildDiscountMessage({name:p.name,occasion,groups,allServices,businessName:business.name,audience:"everyone"});
+     const discountRows=groups.map(g=>({kind:g.kind,value:g.value,starts_at:starts.toUTC().toISO(),expires_at:expires?expires.toUTC().toISO():null,max_uses:body.maxUses?Number(body.maxUses):null,uses:0,active:true,service_ids:g.serviceIds}));
+     try{
+       const result=await sendMail({to:p.email,subject:message.subject,html:message.html,discountRows});
+       if(!result?.rejected?.length)sent++;
+     }catch(e){console.error("SERVICE DISCOUNT EMAIL FAILED",e)}
+     await audit(c,"send_service_discount_email","customer",p.id,p.email,{occasion:occasion||null,occasionType:message.occasionType,discountIds:(created||[]).map(d=>d.id),messageSubject:message.subject,messageHtml:message.html,sent:true});
+   }
+ }
+ for(const d of created||[])await audit(c,"add_service_discount","service_discount",d.id,null,{...d,groupedRules:groups,occasion:occasion||null,notify:notified,notifiedCount:sent});
+ return NextResponse.json({message:(created?.length||0)+" service discount rule(s) activated."+ (notified?" Email sent to "+sent+" of "+total+" customer(s).":"")});
+}
+if(action==="discount_toggle"){const id=String(body.id||""),{data:d,error}=await c.from("customer_discounts").select("*").eq("id",id).maybeSingle();if(error)throw error;if(!d)return NextResponse.json({error:"Discount not found."},{status:404});await c.from("customer_discounts").update({active:!d.active,updated_at:new Date().toISOString()}).eq("id",id);await audit(c,d.scope==="service"?"toggle_service_discount":"toggle_customer_discount","discount",id,d.email,{active:!d.active});return NextResponse.json({message:!d.active?"Discount activated.":"Discount deactivated."})}
 if(action==="block"){const start=DateTime.fromISO(String(body.start),{zone:business.timezone}),end=DateTime.fromISO(String(body.end),{zone:business.timezone});if(!start.isValid||!end.isValid||end<=start)return NextResponse.json({error:"Choose a valid start and end time."},{status:400});const {data:overlap}=await c.from("bookings").select("id").eq("status","confirmed").lt("start_at",end.toUTC().toISO()).gt("blocked_end_at",start.toUTC().toISO());if(overlap?.length)return NextResponse.json({error:`This block overlaps ${overlap.length} existing confirmed appointment(s).`},{status:409});const {data:x,error}=await c.from("availability_exceptions").insert({start_at:start.toUTC().toISO(),end_at:end.toUTC().toISO(),kind:body.kind||"custom",reason:body.reason||null}).select().single();if(error)throw error;await audit(c,"block_availability","exception",x.id,null,{start:x.start_at,end:x.end_at,kind:x.kind,reason:x.reason});return NextResponse.json({message:"Availability blocked."})}
 if(action==="unblock"){const id=String(body.id||"");const {error}=await c.from("availability_exceptions").delete().eq("id",id);if(error)throw error;await audit(c,"unblock_availability","exception",id,null,{});return NextResponse.json({message:"Availability block removed."})}
 return NextResponse.json({error:"Unsupported action."},{status:400})}catch(e){console.error(e);return NextResponse.json({error:"Admin action failed. Check that the final Supabase migration has been run."},{status:500})}}
