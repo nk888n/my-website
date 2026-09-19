@@ -26,7 +26,7 @@ export async function GET(req){
       if(de)throw de;
       discountMap=new Map((discounts||[]).map(d=>[d.id,d]));
     }
-    const enriched=rewards.map(w=>{const d=discountMap.get(w.discount_id);return {...w,discountId:w.discount_id||null,discountKind:d?.kind||null,discountValue:d?.value??null}});
+    const enriched=rewards.map(w=>{const d=discountMap.get(w.discount_id);const dv=d?.value??null;const dk=d?.kind||null;const numeric=Number(dv);const hasDiscount=d&&Number.isFinite(numeric)&&numeric<100;return {...w,prize_type:hasDiscount?"discount":w.prize_type,reward_type:hasDiscount?"discount":w.reward_type,prize_value:hasDiscount?dv:w.prize_value,reward_value:hasDiscount?dv:w.reward_value,discountId:w.discount_id||null,discountKind:dk,discountValue:dv}});
     return NextResponse.json({customer:{id:profile.id,name:profile.name,email:profile.email},rewards:enriched});
   }catch(e){console.error(e);return NextResponse.json({rewards:[]})}
 }
