@@ -246,7 +246,7 @@ export default function ServicesClient({sections,initialSelection}){
               return (
                 <div className="selectionItem" key={s.id}>
                   <span>
-                    {s.name} — {reward ? <><del>${s.price}</del> <strong>FREE</strong></> : d ? <><del>${s.price}</del> <strong>${(s.price-da).toFixed(2)}</strong></> : `$${s.price}`} · {s.duration} min
+                    {s.name} — {free ? <><del>${s.price}</del> <strong>FREE</strong></> : (d||winnerOff>0) ? <><del>${s.price}</del> <strong>${(s.price-da).toFixed(2)}</strong></> : `${s.price}`} · {s.duration} min
                   </span>
                   <button type="button" className="textRemove" onClick={()=>remove(s)}>Remove</button>
                 </div>
