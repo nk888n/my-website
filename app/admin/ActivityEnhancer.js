@@ -13,6 +13,25 @@ function profileForActivity(row,data){
  if(row.entity_type==="booking"){const b=bookings.find(x=>String(x.id)===String(row.entity_id));if(b)return{name:b.name,email:b.email};}
  return customers.find(c=>String(c.email||"").trim().toLowerCase()===String(row.email||"").trim().toLowerCase())||{name:"Customer",email:row.email||""};
 }
+function activityDetails(row){
+ const d=row.details&&typeof row.details==="object"?row.details:{};
+ const serviceName=id=>allServices.find(s=>s.id===id)?.name||id;
+ const rules=Array.isArray(d.groups)?d.groups.flatMap(g=>Array.isArray(g.rules)?g.rules:[]):[];
+ if(row.action==="add_customer_discount"){
+  const parts=[];
+  if(rules.length)parts.push(rules.map(r=>{const v=r.kind==="percent"?String(r.value)+"% OFF":"$"+Number(r.value).toFixed(2)+" OFF";return v+": "+(r.serviceIds||[]).map(serviceName).join(", ")}).join(" · "));
+  if(d.createdCount!=null)parts.push(String(d.createdCount)+" discount(s) created");
+  if(d.notify!==undefined)parts.push("Email: "+(d.notify?"Yes":"No"));
+  return parts.join(" · ");
+ }
+ if(row.action==="add_service_discount")return [(d.kind==="percent"?String(d.value)+"% OFF":"$"+Number(d.value||0).toFixed(2)+" OFF"),(d.serviceIds||[]).map(serviceName).join(", ")].filter(Boolean).join(" · ");
+ if(row.action==="winner_created")return [d.prizeType?String(d.prizeType).replaceAll("_"," "):"",d.value!=null&&d.prizeType==="discount"?String(d.value)+"% OFF":"",Array.isArray(d.serviceNames)?d.serviceNames.join(", "):"",d.emailSent!=null?"Email: "+(d.emailSent?"Sent":"Failed"):""].filter(Boolean).join(" · ");
+ if(row.action==="send_customer_email")return [d.subject?"Subject: "+d.subject:"",d.sent!=null?"Sent: "+d.sent+"/"+d.requested:""].filter(Boolean).join(" · ");
+ if(row.action==="customer_profile_created")return "New customer profile created";
+ if(row.action==="update_customer_profile")return Object.entries(d).filter(([k])=>k!=="updated_at").map(([k,v])=>k+": "+String(v)).join(" · ");
+ return "";
+}
+
 function bookingDiscountDetails(row,data){
  if(row.action!=="booking_created")return "";
  const details=row.details&&typeof row.details==="object"?row.details:{};
