@@ -29,7 +29,9 @@ export async function POST(req){
    for(const r of g.rules)for(const id of r.serviceIds){if(duplicateServices.has(id))return NextResponse.json({error:"A service can only appear once within the same discount group."},{status:400});duplicateServices.add(id)}
   }
   const customerIds=[...new Set(groups.flatMap(g=>g.customerIds))],c=db();
-  const attachments=Array.isArray(body.attachments)?body.attachments.filter(a=>a&&a.content).slice(0,5):[];\n  const attachmentBytes=attachments.reduce((sum,a)=>sum+String(a.content).length,0);\n  if(attachmentBytes>4_000_000)return NextResponse.json({error:"Email attachments are too large. Keep the total under 3 MB."},{status:400});
+  const attachments=Array.isArray(body.attachments)?body.attachments.filter(a=>a&&a.content).slice(0,5):[];
+  const attachmentBytes=attachments.reduce((sum,a)=>sum+String(a.content).length,0);
+  if(attachmentBytes>4_000_000)return NextResponse.json({error:"Email attachments are too large. Keep the total under 3 MB."},{status:400});
   const {data:people,error:peopleError}=await c.from("customer_profiles").select("id,name,email").in("id",customerIds);if(peopleError)throw peopleError;
   if((people||[]).length!==customerIds.length)return NextResponse.json({error:"One selected customer profile could not be found."},{status:400});
   const personMap=new Map(people.map(p=>[p.id,p]));
