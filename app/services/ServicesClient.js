@@ -17,7 +17,7 @@ function discountAmount(d,price){
 
 function Card({s,onSelect,selected,onRemove,discount,reward}){
   const [open,setOpen]=useState(false);
-  const free=winnerIsFree(reward) && !discount,winnerOff=free?0:winnerDiscount(reward,s.price); const newPrice=free?0:Math.max(0,s.price-discountAmount(discount,s.price)-winnerOff);
+  const winnerApplied=!!discount?.winner,free=winnerIsFree(reward)&&!discount,winnerOff=free||winnerApplied?0:winnerDiscount(reward,s.price); const newPrice=free?0:Math.max(0,s.price-discountAmount(discount,s.price)-winnerOff);
 
   return (
     <article className={`card ${open?"expanded":""}`}>
@@ -40,7 +40,7 @@ function Card({s,onSelect,selected,onRemove,discount,reward}){
           <div className="discountBadge" style={{background:"#fbf2df",color:"#8d6b2f"}}>YOUR GIFT · FREE</div>
         ) : (discount || winnerOff>0) ? (
           <div className="discountBadge">
-            {winnerOff>0 ? "WINNER "+Number(reward?.prize_value??reward?.reward_value??0)+"% OFF" : (discount.kind==="percent"?`SPECIAL ${discount.value}% OFF`:`SPECIAL ${Number(discount.value).toFixed(2)} OFF`)}
+            {discount?.winner ? "WINNER "+Number(discount.value)+"% OFF" : winnerOff>0 ? "WINNER "+Number(reward?.prize_value??reward?.reward_value??0)+"% OFF" : (discount.kind==="percent"?`SPECIAL ${discount.value}% OFF`:`SPECIAL ${Number(discount.value).toFixed(2)} OFF`)}
           </div>
         ) : null}
         <div className="cardactions">
@@ -173,7 +173,7 @@ export default function ServicesClient({sections,initialSelection}){
   const pricing=selected.map(s=>{
     const reward=rewardFor(s);
     const d=best(s,rewardFor(s));
-    const free=winnerIsFree(reward) && !d; const winnerOff=free?0:winnerDiscount(reward,s.price); const amount=free?s.price:discountAmount(d,s.price)+winnerOff; return {s,reward,d,amount};
+    const free=winnerIsFree(reward) && !d; const winnerOff=free||d?.winner?0:winnerDiscount(reward,s.price); const amount=free?s.price:discountAmount(d,s.price)+winnerOff; return {s,reward,d,amount};
   });
 
   const regular=selected.reduce((a,s)=>a+s.price,0)
@@ -246,7 +246,7 @@ export default function ServicesClient({sections,initialSelection}){
             {selected.map(s=>{
               const d=best(s,rewardFor(s));
               const reward=rewardFor(s);
-              const free=winnerIsFree(reward) && !d, winnerOff=free?0:winnerDiscount(reward,s.price);
+              const free=winnerIsFree(reward) && !d, winnerOff=free||d?.winner?0:winnerDiscount(reward,s.price);
               const da=free?s.price:discountAmount(d,s.price)+winnerOff;
               return (
                 <div className="selectionItem" key={s.id}>
