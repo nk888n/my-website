@@ -50,7 +50,7 @@ export default function SiteRuntimeOverrides(){
         const json=await response.json();
         if(dead)return;
         const pathname=window.location.pathname;
-        if(pathname.startsWith("/admin"))return;
+        if(pathname.startsWith("/admin")||pathname==="/booking"||pathname.startsWith("/manage"))return;
         const content=json?.content||{};
         const path=pathname.replace(/\/$/,"")||"/";
         const pageContent=content.pages?.[path]||{};
