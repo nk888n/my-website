@@ -4,3 +4,6 @@
 .dossierFieldHint{display:block;margin-top:5px;font-size:11px;line-height:1.4;color:#8a7a78;font-weight:400}
 
 .adminPaymentNote{margin-top:8px;padding:8px 10px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600}
+
+.customerToolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px}.customerToolbar .adminSearch{margin-bottom:0;flex:1}.customerSort{min-height:42px;padding:0 12px;border:1px solid var(--line);background:#fff;color:inherit;border-radius:2px;min-width:250px}.customerNextBooking{margin-top:5px;font-size:13px}
+@media (max-width:700px){.customerToolbar{flex-direction:column;align-items:stretch}.customerSort{width:100%;min-width:0}}
