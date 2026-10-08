@@ -1,6 +1,5 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
-import "./website-editor.css";
 
 function selectorFor(el){
   if(!el||el.nodeType!==1||["HTML","BODY"].includes(el.tagName))return "";
