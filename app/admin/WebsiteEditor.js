@@ -58,11 +58,12 @@ export default function WebsiteEditor({pin}){
   setContent(prev=>({...prev,elements:{...(prev.elements||{}),[selected.selector]:{...(prev.elements?.[selected.selector]||{}),...patch}}}));
   setDirty(true);
  }
- function updateStyle(k,v){const next={...styles,[k]:v};setStyles(next);updateCfg({styles:next})}
- function changeText(v){setText(v);updateCfg({text:v})}
- function changeSrc(v){setSrc(v);updateCfg({src:v})}
- function changeHref(v){setHref(v);updateCfg({href:v})}
- function toggleHidden(){const v=!hidden;setHidden(v);updateCfg({hidden:v})}
+ useEffect(()=>{if(iframeRef.current?.contentDocument)applyPreview()},[content]);
+ function updateStyle(k,v){const next={...styles,[k]:v};setStyles(next);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el)el.style[k]=v||"";updateCfg({styles:next})}
+ function changeText(v){setText(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el&&!["IMG","VIDEO","INPUT","TEXTAREA"].includes(el.tagName))el.textContent=v;updateCfg({text:v})}
+ function changeSrc(v){setSrc(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el&&(el.tagName==="IMG"||el.tagName==="VIDEO"))el.src=v;updateCfg({src:v})}
+ function changeHref(v){setHref(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el?.tagName==="A")el.href=v;updateCfg({href:v})}
+ function toggleHidden(){const v=!hidden;setHidden(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el)el.style.display=v?"none":"";updateCfg({hidden:v})}
  function moveBy(dx,dy){const x=Number(selected?.x||0)+dx,y=Number(selected?.y||0)+dy;const next={...styles,transform:"translate("+x+"px, "+y+"px)"};setStyles(next);updateCfg({styles:next});setSelected(s=>({...s,x,y}))}
  function startDrag(e){
   if(!selected||e.button!==0)return;
