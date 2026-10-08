@@ -28,6 +28,8 @@ export default function WebsiteEditor({pin}){
  function clearOutline(doc){doc.querySelectorAll("[data-editor-selected]").forEach(x=>{x.removeAttribute("data-editor-selected");x.style.outline=""})}
  function applyPreview(){
   const doc=iframeRef.current?.contentDocument;if(!doc)return;
+  const root=doc.documentElement,g=content.globals||{},map={background:"--bg",surface:"--cream",text:"--ink",muted:"--muted",primary:"--rose",accent:"--gold",border:"--line",danger:"--danger"};
+  Object.entries(map).forEach(([key,varName])=>{if(g[key])root.style.setProperty(varName,g[key])});
   clearOutline(doc);
   const data=pageData();
   Object.entries(data.elements||{}).forEach(([sel,cfg])=>doc.querySelectorAll(sel).forEach(el=>{
