@@ -49,8 +49,10 @@ export default function SiteRuntimeOverrides(){
         const response=await fetch("/api/site-content",{cache:"no-store"});
         const json=await response.json();
         if(dead)return;
+        const pathname=window.location.pathname;
+        if(pathname.startsWith("/admin"))return;
         const content=json?.content||{};
-        const path=window.location.pathname.replace(/\/$/,"")||"/";
+        const path=pathname.replace(/\/$/,"")||"/";
         const pageContent=content.pages?.[path]||{};
         applyElementOverrides(document,pageContent);
         applyTheme(document,content.globals||{});
