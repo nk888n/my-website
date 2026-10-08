@@ -11,7 +11,7 @@ export async function POST(req){
   const c=db();let p=null;
   if(id){const r=await c.from("customer_profiles").select("*").eq("id",id).maybeSingle();if(r.error)throw r.error;p=r.data}
   if(!p){const r=await c.from("customer_profiles").select("*").eq("email",email).eq("name",name).order("created_at",{ascending:true}).limit(1).maybeSingle();if(r.error)throw r.error;p=r.data}
-  const values={name,email,phone:clean(b.phone)||null,address:clean(b.address)||null,internal_notes:clean(b.internal_notes)||null,updated_at:new Date().toISOString()};
+  const birthday=clean(b.birthday)||null,personalEventName=clean(b.personalEventName)||null,personalEventDate=clean(b.personalEventDate)||null;const values={name,email,phone:clean(b.phone)||null,address:clean(b.address)||null,internal_notes:clean(b.internal_notes)||null,birthday,personal_event_name:personalEventName,personal_event_date:personalEventDate,updated_at:new Date().toISOString()};
   if(p){const r=await c.from("customer_profiles").update(values).eq("id",p.id).select().single();if(r.error)throw r.error;p=r.data}
   else{const r=await c.from("customer_profiles").insert(values).select().single();if(r.error)throw r.error;p=r.data}
   await c.from("bookings").update({name:p.name,email:p.email}).eq("customer_id",p.id);
