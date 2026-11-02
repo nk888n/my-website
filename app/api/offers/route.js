@@ -21,7 +21,7 @@ export async function GET(){
   const db=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
   const nowIso=new Date().toISOString(),now=Date.now();
   const [{data,error},{data:schedule,error:scheduleError}]=await Promise.all([
-   db.from("beauty_offers").select("id,title,short_description,nav_label,services,original_price,offer_price,total_duration_minutes,popup_image_url,detail_image_url,starts_at,ends_at,homepage_order,show_homepage,show_offers_page,is_active").eq("is_active",true).lte("starts_at",nowIso).gt("ends_at",nowIso).order("homepage_order").order("starts_at"),
+   db.from("beauty_offers").select("id,title,short_description,nav_label,services,addons,original_price,offer_price,total_duration_minutes,popup_image_url,detail_image_url,starts_at,ends_at,homepage_order,show_homepage,show_offers_page,is_active").eq("is_active",true).lte("starts_at",nowIso).gt("ends_at",nowIso).order("homepage_order").order("starts_at"),
    db.from("beauty_offer_rotation").select("*").eq("singleton",true).maybeSingle()
   ]);
   if(error)throw error;
