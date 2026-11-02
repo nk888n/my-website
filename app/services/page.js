@@ -1,5 +1,6 @@
 import ServicesClient from "./ServicesClient";
 import { facialTreatments, bodyTreatments, eyebrow, findService } from "../../lib/services";
+import OffersNavLink from "../components/OffersNavLink";
 
 export default async function Services({ searchParams }) {
   const p = await searchParams;
@@ -11,5 +12,5 @@ export default async function Services({ searchParams }) {
     facialAddons: get("fa") ? get("fa").split(",").filter(Boolean) : [],
     bodyAddons: get("ba") ? get("ba").split(",").filter(Boolean) : [],
   };
-  return <main className="container"><nav className="nav"><a className="brand" href="/">VALE BEAUTY VK</a><div className="navlinks"><a href="/booking">Booking</a><a href="/register">👤 Register</a></div></nav><section className="section"><div className="eyebrow">Our Menu</div><h1>Services</h1><p style={{color:"var(--muted)"}}>Choose one facial, one body treatment, eyebrow threading, or combine services.</p><ServicesClient sections={[["Facial Treatments", facialTreatments],["Body Treatments", bodyTreatments],["Eyebrow Threading", [eyebrow]]]} initialSelection={initialSelection}/></section></main>;
+  return <main className="container"><nav className="nav"><a className="brand" href="/">VALE BEAUTY VK</a><div className="navlinks"><a href="/booking">Booking</a><a href="/register">👤 Register</a><OffersNavLink/></div></nav><section className="section"><div className="eyebrow">Our Menu</div><h1>Services</h1><p style={{color:"var(--muted)"}}>Choose one facial, one body treatment, eyebrow threading, or combine services.</p><ServicesClient sections={[["Facial Treatments", facialTreatments],["Body Treatments", bodyTreatments],["Eyebrow Threading", [eyebrow]]]} initialSelection={initialSelection}/></section></main>;
 }
