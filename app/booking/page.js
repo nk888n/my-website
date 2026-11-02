@@ -5,7 +5,7 @@ export default async function BookingPage({ searchParams }) {
   const p = await searchParams;
   const get = key => (typeof p?.[key] === "string" ? p[key] : "");
   const initialData = {
-    facial: get("facial"), body: get("body"), eyebrow: !!get("eyebrow"),
+    facial: get("facial"), body: get("body"), eyebrow: !!get("eyebrow"), offerId: get("offerId"),
     date: "", start: "", name: "", email: "", notes: "", customerId: "", newCustomer: false,
     fa: get("fa") ? get("fa").split(",").filter(Boolean) : [],
     ba: get("ba") ? get("ba").split(",").filter(Boolean) : [],
