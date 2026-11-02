@@ -125,3 +125,87 @@
 .offerPreviewLuxuryButton{padding:13px;font-size:8px}
 .offerPreviewLuxuryNote{margin-top:9px}
 @media(max-width:600px){.offerPreviewModal{width:calc(100vw - 20px)!important;padding:10px!important}.offerPreviewLuxuryVisual{height:160px!important;min-height:160px!important;max-height:160px!important}.offerPreviewLuxuryBody{padding:16px}.offerPreviewLuxuryVisual>div{left:17px;bottom:14px}}
+
+
+/* VALE BEAUTY signature offer design — clean luxury split layout */
+.offerPopupBackdrop{padding:18px;background:rgba(31,24,26,.66);backdrop-filter:blur(5px)}
+.offerPopup{width:min(760px,calc(100vw - 36px));max-height:88vh;overflow:auto;border:1px solid #d6c09a;border-radius:3px;background:#f8f3eb;box-shadow:0 28px 90px rgba(20,12,14,.36)}
+.offerPopupLayout{display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);min-height:450px}
+.offerPopupClose{top:12px;right:12px;width:34px;height:34px;background:rgba(248,243,235,.92);color:#49342e;border:1px solid rgba(160,125,91,.35);font-size:23px;box-shadow:0 2px 12px rgba(30,20,20,.12)}
+.offerPopupVisual{position:relative;min-height:450px;height:100%;overflow:hidden;background:#d9c9b6}
+.offerPopupImage{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:cover;object-position:center;filter:saturate(.82);display:block}
+.offerPopupImageFallback{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font:italic 34px Fraunces,Georgia,serif;background:linear-gradient(145deg,#b8a18b,#6b4c46)}
+.offerPopupImageCaption{position:absolute;z-index:1;left:20px;bottom:20px;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.3);display:grid;gap:5px}
+.offerPopupImageCaption span{font:500 14px Fraunces,Georgia,serif;letter-spacing:.22em}
+.offerPopupImageCaption i{font:normal 7px Inter,Arial,sans-serif;letter-spacing:.25em}
+.offerPopupBody{padding:42px 34px 28px;display:flex;flex-direction:column;justify-content:center;text-align:left;background:#f8f3eb}
+.offerPopupBrand,.offerPreviewBrand{font:600 9px Inter,Arial,sans-serif;letter-spacing:.24em;color:#7e5c4c;margin-bottom:18px}
+.offerPopupBrand span,.offerPreviewBrand span{color:#ad9478;font-weight:400}
+.offerPopupEyebrow{font:700 8px Inter,Arial,sans-serif;letter-spacing:.24em;color:#a27d55;text-transform:uppercase;margin-bottom:9px}
+.offerPopupTitle{font:italic 42px/1.02 Fraunces,Georgia,serif;color:#352522;margin:0 0 13px;letter-spacing:-.025em}
+.offerPopupDescription{font:14px/1.6 Inter,Arial,sans-serif;color:#77665d;margin:0 0 18px!important;max-width:none!important}
+.offerPopupOfferLine{border-top:1px solid #dfd1be;border-bottom:1px solid #dfd1be;padding:12px 0;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.offerPopupPrice{display:flex;align-items:baseline;gap:10px;margin:0}
+.offerPopupPrice del{font:13px Inter,Arial,sans-serif;color:#9a8d83}
+.offerPopupPrice strong{font:500 38px Fraunces,Georgia,serif;color:#743e43}
+.offerPopupLimited{font:700 7px Inter,Arial,sans-serif;letter-spacing:.16em;border:1px solid #c8ad83;color:#967348;padding:7px 8px;white-space:nowrap}
+.offerPopupServices{font:10px/1.7 Inter,Arial,sans-serif;letter-spacing:.035em;color:#78685f;margin:15px 0 8px}
+.offerPopupDuration{font:10px Inter,Arial,sans-serif;letter-spacing:.12em;color:#987a5b;margin:0 0 14px}
+.offerPopupCountdown{margin:0 0 16px}
+.offerPopupCountdown>span{font:700 7px Inter,Arial,sans-serif;letter-spacing:.2em;color:#9b8877;margin-bottom:6px}
+.offerPopupCountdown>div{gap:4px}
+.offerPopupCountdown>div>div{padding:7px 3px;background:#eee5d9;border:1px solid #e5d8c8;border-radius:0}
+.offerPopupCountdown b{font:500 20px Fraunces,Georgia,serif;color:#4b3833}
+.offerPopupCountdown small{font:7px Inter,Arial,sans-serif;letter-spacing:.1em;color:#89776c}
+.offerPopupButton{background:#713e45;color:#fff;border:1px solid #713e45;padding:15px 12px;text-align:center;font:700 8px Inter,Arial,sans-serif;letter-spacing:.22em;box-shadow:0 5px 14px rgba(94,49,55,.14)}
+.offerPopupButton:hover{background:#5d3038}
+.offerPopupFootnote{font:italic 11px Fraunces,Georgia,serif;color:#a58c78;text-align:center;margin-top:12px}
+.offerTheme-black-friday .offerPopupBody{background:#f5f0e7}
+.offerTheme-black-friday .offerPopupEyebrow{color:#8e6c3f}
+.offerTheme-black-friday .offerPopupPrice strong{color:#292323}
+.offerTheme-black-friday .offerPopupButton{background:#282323;border-color:#b69a6c;color:#e9d7b4}
+.offerTheme-valentines .offerPopupPrice strong,.offerTheme-blush .offerPopupPrice strong{color:#a65e70}
+.offerTheme-holiday .offerPopupPrice strong{color:#365743}
+.offerTheme-holiday .offerPopupButton{background:#31513f;border-color:#31513f}
+.offerTheme-summer .offerPopupPrice strong{color:#a8793e}
+.offerTheme-autumn .offerPopupPrice strong{color:#9b6344}
+.offerPreviewModal{width:min(850px,calc(100vw - 32px))!important;max-width:850px!important;max-height:90vh!important;overflow:auto!important;padding:18px!important;background:#f8f3eb!important;border:1px solid #d6c09a!important}
+.offerPreviewLuxury{width:min(760px,100%);max-width:760px;margin:12px auto 0;display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);min-height:420px;overflow:hidden;border:1px solid #d6c09a;background:#f8f3eb;box-shadow:0 18px 50px rgba(60,43,35,.12)}
+.offerPreviewLuxuryVisual{height:auto!important;min-height:420px!important;max-height:none!important;position:relative;overflow:hidden;background:#d9c9b6}
+.offerPreviewLuxuryVisual img{position:absolute;inset:0;width:100%!important;height:100%!important;max-width:100%!important;object-fit:cover!important;object-position:center!important;filter:saturate(.82)}
+.offerPreviewLuxuryVisual:after{display:none}
+.offerPreviewLuxuryVisual>div{position:absolute;z-index:1;left:20px;right:12px;bottom:20px;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.3);display:grid;gap:5px}
+.offerPreviewLuxuryVisual span{font:500 14px Fraunces,Georgia,serif;letter-spacing:.22em;color:#fff}
+.offerPreviewLuxuryVisual i{font:normal 7px Inter,Arial,sans-serif;letter-spacing:.25em}
+.offerPreviewLuxuryBody{padding:38px 30px 25px;display:flex;flex-direction:column;justify-content:center;text-align:left;background:#f8f3eb}
+.offerPreviewBrand{margin-bottom:16px}
+.offerPreviewLuxuryBody>small:first-of-type{font:700 8px Inter,Arial,sans-serif;letter-spacing:.24em;color:#a27d55}
+.offerPreviewLuxuryBody h2{font:italic 40px/1.02 Fraunces,Georgia,serif;color:#352522;margin:8px 0 12px}
+.offerPreviewLuxuryBody>p:first-of-type{font:14px/1.6 Inter,Arial,sans-serif;color:#77665d;margin:0 0 17px}
+.offerPreviewLuxuryPrice{display:flex;align-items:baseline;gap:10px;border-top:1px solid #dfd1be;border-bottom:1px solid #dfd1be;padding:12px 0}
+.offerPreviewLuxuryPrice del{font:13px Inter,Arial,sans-serif;color:#9a8d83}
+.offerPreviewLuxuryPrice strong{font:500 38px Fraunces,Georgia,serif;color:#743e43}
+.offerPreviewLuxuryPrice span{margin-left:auto;font:700 7px Inter,Arial,sans-serif;letter-spacing:.16em;color:#967348;border:1px solid #c8ad83;padding:7px 8px}
+.offerPreviewLuxuryServices{font:10px/1.7 Inter,Arial,sans-serif;letter-spacing:.035em;color:#78685f;margin:14px 0 8px}
+.offerPreviewDuration{font:10px Inter,Arial,sans-serif;letter-spacing:.12em;color:#987a5b;margin:0 0 15px}
+.offerPreviewLuxuryButton{background:#713e45;color:#fff;text-align:center;padding:15px 12px;font:700 8px Inter,Arial,sans-serif;letter-spacing:.22em}
+.offerPreviewLuxuryNote{font:italic 11px Fraunces,Georgia,serif;color:#a58c78;text-align:center;margin-top:12px}
+.offerPreviewImageFallback{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font:italic 34px Fraunces,Georgia,serif;background:linear-gradient(145deg,#b8a18b,#6b4c46)}
+.offerTheme-black-friday .offerPreviewLuxuryPrice strong{color:#292323}
+.offerTheme-black-friday .offerPreviewLuxuryButton{background:#282323;border:1px solid #b69a6c;color:#e9d7b4}
+.offerTheme-valentines .offerPreviewLuxuryPrice strong,.offerTheme-blush .offerPreviewLuxuryPrice strong{color:#a65e70}
+.offerTheme-holiday .offerPreviewLuxuryPrice strong{color:#365743}
+@media(max-width:650px){
+ .offerPopupBackdrop{padding:10px}
+ .offerPopup{width:calc(100vw - 20px);max-height:92vh}
+ .offerPopupLayout{grid-template-columns:1fr;min-height:0}
+ .offerPopupVisual{min-height:175px;height:175px}
+ .offerPopupBody{padding:24px 22px 22px}
+ .offerPopupTitle{font-size:34px}
+ .offerPopupPrice strong{font-size:33px}
+ .offerPreviewModal{width:calc(100vw - 18px)!important;padding:10px!important}
+ .offerPreviewLuxury{grid-template-columns:1fr;min-height:0}
+ .offerPreviewLuxuryVisual{height:175px!important;min-height:175px!important}
+ .offerPreviewLuxuryBody{padding:22px}
+ .offerPreviewLuxuryBody h2{font-size:34px}
+}
