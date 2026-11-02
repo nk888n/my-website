@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import {allServices,facialTreatments,bodyTreatments,eyebrow} from "../../lib/services";\nimport {offerOccasions,suggestOfferDescription} from "../../lib/offerCopy";
+import {allServices,facialTreatments,bodyTreatments,eyebrow} from "../../lib/services";
+import {offerOccasions,suggestOfferDescription} from "../../lib/offerCopy";
 const money=v=>`$${Number(v||0).toFixed(2)}`;
 const blank=()=>({id:"",title:"",short_description:"",nav_label:"Offers",services:[],original_price:"",offer_price:"",popup_image_url:"",detail_image_url:"",starts_at:"",ends_at:"",homepage_order:1,show_homepage:true,show_offers_page:true,is_active:false,duplicate_confirmed:false});
 const category=id=>facialTreatments.some(s=>s.id===id)?"facial":bodyTreatments.some(s=>s.id===id)?"body":id===eyebrow.id?"eyebrow":"unknown";
