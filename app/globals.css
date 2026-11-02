@@ -209,3 +209,55 @@
  .offerPreviewLuxuryBody{padding:22px}
  .offerPreviewLuxuryBody h2{font-size:34px}
 }
+
+
+/* Public Offers page — Vale Beauty luxury editorial layout */
+.offersPage{width:min(1120px,92%);min-height:65vh}
+.offersSection{padding:54px 0 76px}
+.offersHero{text-align:center;max-width:700px;margin:0 auto 38px;padding:12px 20px 0}
+.offersHero .gold{color:#a88964;font-size:9px;letter-spacing:.32em;font-weight:600}
+.offersHero h1{font:400 clamp(38px,5vw,58px)/1.08 Fraunces,Georgia,serif;color:#382a29;margin:15px 0 14px;letter-spacing:-.025em}
+.offersOrnament{display:flex;justify-content:center;align-items:center;gap:9px;margin:18px auto}
+.offersOrnament:before,.offersOrnament:after{content:"";width:38px;height:1px;background:#d2b88e}
+.offersOrnament i{width:6px;height:6px;border:1px solid #b99663;transform:rotate(45deg)}
+.offersIntro{max-width:490px;margin:0 auto;color:#86766d;font:15px/1.75 Fraunces,Georgia,serif}
+.offersPublicGrid{width:min(900px,100%);margin:0 auto;display:grid;grid-template-columns:1fr;gap:30px}
+.offerPublicCard{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);background:#fbf8f3;border:1px solid #dfd0bd;box-shadow:0 14px 38px rgba(67,47,39,.055);overflow:hidden}
+.offerPublicMedia{position:relative;min-height:440px;background:#d7c8b7;overflow:hidden}
+.offerPublicImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:saturate(.82)}
+.offerPublicImageFallback{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(145deg,#c8b49d,#765a50);color:#fff;font:italic 34px Fraunces,Georgia,serif}
+.offerMediaBrand{position:absolute;left:20px;bottom:19px;color:#fff;font:500 9px Inter,Arial,sans-serif;letter-spacing:.22em;text-shadow:0 1px 10px rgba(0,0,0,.35)}
+.offerPublicBody{padding:34px 34px 27px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.offerPublicBody>.gold{color:#a48761;font-size:8px;letter-spacing:.25em;font-weight:700}
+.offerPublicBody h2{font:italic 39px/1.04 Fraunces,Georgia,serif;color:#382a29;margin:11px 0 13px}
+.offerPublicBody>p{font:13px/1.7 Inter,Arial,sans-serif;color:#817269;margin:0 0 17px}
+.offerPublicPrices{display:flex;align-items:baseline;gap:13px;padding:14px 0;border-top:1px solid #e5d9c9;border-bottom:1px solid #e5d9c9}
+.offerPublicPrices del{font:12px Inter,Arial,sans-serif;color:#a19488}
+.offerPublicPrices strong{font:500 36px Fraunces,Georgia,serif;color:#75424a}
+.offerPublicPrices span{margin-left:auto;border:1px solid #c9b18b;color:#96794f;padding:6px 8px;font:700 7px Inter,Arial,sans-serif;letter-spacing:.16em;white-space:nowrap}
+.offerPublicBody .offerPopupCountdown{margin:17px 0 12px}
+.offerPublicBody .offerPopupCountdown>span{font:700 7px Inter,Arial,sans-serif;letter-spacing:.2em;color:#9b8877}
+.offerPublicBody .offerPopupCountdown>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.offerPublicBody .offerPopupCountdown>div>div{background:#f0e8dd;border:1px solid #e6dacb;padding:9px 5px;text-align:center}
+.offerPublicBody .offerPopupCountdown b{font:500 21px Fraunces,Georgia,serif;color:#4b3833}
+.offerPublicBody .offerPopupCountdown small{font:7px Inter,Arial,sans-serif;letter-spacing:.1em;color:#89776c}
+.offerDetailsToggle{padding:14px 0;border-top:1px solid #e5d9c9;border-bottom:1px solid #e5d9c9;margin-top:6px;color:#51413b;font:600 11px Inter,Arial,sans-serif;letter-spacing:.04em}
+.offerServiceDetails{max-height:270px;overflow:auto;padding:5px 0}
+.offerServiceDetails>div{padding:11px 0;border-bottom:1px solid #e9dfd4}
+.offerServiceDetails h3{font:400 19px Fraunces,Georgia,serif;color:#463630}
+.offerServiceDetails small,.offerServiceDetails p,.offerServiceDetails ul{font:11px/1.65 Inter,Arial,sans-serif;color:#85766c}
+.offerPublicFooter{font:700 7px Inter,Arial,sans-serif;letter-spacing:.13em;color:#9a846d;padding:13px 0}
+.offerAddButton{width:100%;background:#713e45;color:#fff;padding:15px 12px;font:700 8px Inter,Arial,sans-serif;letter-spacing:.2em;border:1px solid #713e45}
+.offerAddButton:disabled{background:#b9aaa2;color:#fff;border-color:#b9aaa2;opacity:.72;cursor:not-allowed}
+@media(max-width:700px){
+ .offersSection{padding:35px 0 55px}
+ .offersHero{margin-bottom:26px;padding:5px 8px}
+ .offersHero h1{font-size:40px}
+ .offersIntro{font-size:14px}
+ .offersPublicGrid{gap:20px}
+ .offerPublicCard{grid-template-columns:1fr}
+ .offerPublicMedia{min-height:0;height:245px}
+ .offerPublicBody{padding:24px 21px 22px}
+ .offerPublicBody h2{font-size:33px}
+ .offerPublicPrices strong{font-size:32px}
+}
