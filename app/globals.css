@@ -27,3 +27,26 @@
 .offerRotationEnable{display:flex;align-items:center;gap:8px;margin:14px 0;font-size:13px;font-weight:600}
 .offerRotationPanel>p{max-width:800px;line-height:1.5}
 @media(max-width:700px){.offerRotationDates{grid-template-columns:1fr}.offerRotationRow{grid-template-columns:28px minmax(0,1fr) minmax(65px,.5fr) minmax(65px,.5fr)}.offerRotationRow .textButton{grid-column:2/-1;justify-self:start}.offerRotationPanel{padding:12px}}
+
+
+/* Occasion-aware Vale Beauty offer popup themes */
+.offerPopup{--offer-accent:#a87972;--offer-soft:#f3e9e3;--offer-deep:#45383a;background:#fffaf6;border:1px solid rgba(185,150,99,.3);border-radius:2px}
+.offerPopupClose{box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.offerPopupEyebrow{color:var(--offer-accent);font-weight:600}
+.offerPopupPrice strong{color:var(--offer-accent)}
+.offerPopupCountdown>div>div{background:var(--offer-soft)}
+.offerPopupButton{background:var(--offer-deep);color:#fff;transition:filter .2s,transform .2s}
+.offerPopupButton:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.offerTheme-luxury{--offer-accent:#a87972;--offer-soft:#f3e9e3;--offer-deep:#514044}
+.offerTheme-black-friday{--offer-accent:#b99a65;--offer-soft:#29272a;--offer-deep:#191719;background:#f8f5f0;color:#282326;border-color:#b99a65}
+.offerTheme-black-friday .offerPopupEyebrow,.offerTheme-black-friday .offerPopupPrice strong{color:#987746}
+.offerTheme-black-friday .offerPopupCountdown>div>div{background:#29272a;color:#fff}
+.offerTheme-black-friday .offerPopupCountdown small,.offerTheme-black-friday .offerPopupCountdown>span,.offerTheme-black-friday .offerPopupServices{color:#d8cec3}
+.offerTheme-black-friday .offerPopupCountdown b{color:#fff}
+.offerTheme-valentines,.offerTheme-blush{--offer-accent:#b87583;--offer-soft:#f8e8eb;--offer-deep:#9b596a;background:#fff7f7;border-color:#efd5dc}
+.offerTheme-holiday{--offer-accent:#9a7650;--offer-soft:#e8eee6;--offer-deep:#294637;background:#fbfaf4;border-color:#d8dfd2}
+.offerTheme-summer{--offer-accent:#b27d42;--offer-soft:#f8efd9;--offer-deep:#a66d37;background:#fffdf5;border-color:#ead9b5}
+.offerTheme-autumn{--offer-accent:#a76842;--offer-soft:#f2e5d9;--offer-deep:#68432f;background:#fcf7f0;border-color:#e8d1bd}
+.offerTheme-seasonal{--offer-accent:#9b8072;--offer-soft:#eee9e4;--offer-deep:#62534b;background:#fbf8f4;border-color:#e4d8ce}
+.offerPopupImage{max-height:260px}
+@media(max-width:600px){.offerPopupImage{height:185px;max-height:185px}}
