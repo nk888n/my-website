@@ -27,9 +27,10 @@ export async function GET(){
   if(error)throw error;
   if(scheduleError)throw scheduleError;
   const offers=data||[];
+  const rotationActive=!!(schedule?.is_enabled&&now>=Date.parse(schedule.starts_at)&&now<Date.parse(schedule.ends_at));
   const rotationOffer=chooseRotatingOffer(schedule,offers,now);
-  const homepage=(rotationOffer?.show_homepage?rotationOffer:null)||offers.find(x=>x.show_homepage)||null;
+  const homepage=rotationActive?(rotationOffer?.show_homepage?rotationOffer:null):offers.find(x=>x.show_homepage)||null;
   const visible=offers.filter(x=>x.show_offers_page);
-  return NextResponse.json({homepage,offers:visible,navLabel:homepage?.nav_label||visible[0]?.nav_label||"Offers",hasOffers:offers.length>0,rotation:{active:!!rotationOffer,ends_at:schedule?.ends_at||null}});
+  return NextResponse.json({homepage,offers:visible,navLabel:homepage?.nav_label||visible[0]?.nav_label||"Offers",hasOffers:offers.length>0,rotation:{active:rotationActive,ends_at:schedule?.ends_at||null}});
  }catch(e){console.error("PUBLIC OFFERS GET",e);return NextResponse.json({homepage:null,offers:[],navLabel:"Offers",hasOffers:false,rotation:{active:false,ends_at:null}},{status:200})}
 }
