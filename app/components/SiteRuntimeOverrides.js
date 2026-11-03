@@ -1,7 +1,7 @@
 "use client";
 import {useEffect} from "react";
 
-function applyElementOverrides(doc,pageContent){
+function applyElementOverrides(doc,pageContent,includeCustomBlocks=true){
   const elements=pageContent?.elements||{};
   Object.entries(elements).forEach(([selector,cfg])=>{
     if(!selector||!cfg||typeof cfg!=="object")return;
@@ -10,7 +10,7 @@ function applyElementOverrides(doc,pageContent){
     nodes.forEach(el=>{
       if(cfg.hidden===true)el.style.display="none";
       if(cfg.hidden===false)el.style.removeProperty("display");
-      if(cfg.text!=null&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION"].includes(el.tagName))el.textContent=String(cfg.text);
+      if(cfg.text!=null&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION"].includes(el.tagName)&&el.textContent!==String(cfg.text))el.textContent=String(cfg.text);
       if(cfg.src&&(el.tagName==="IMG"||el.tagName==="VIDEO"))el.src=String(cfg.src);
       if(cfg.href&&el.tagName==="A")el.href=String(cfg.href);
       if(cfg.styles&&typeof cfg.styles==="object")Object.entries(cfg.styles).forEach(([key,value])=>{
@@ -18,7 +18,7 @@ function applyElementOverrides(doc,pageContent){
       });
     });
   });
-  Object.entries(pageContent?.customBlocks||{}).forEach(([selector,blocks])=>{
+  if(includeCustomBlocks)Object.entries(pageContent?.customBlocks||{}).forEach(([selector,blocks])=>{
     let parents=[];try{parents=[...doc.querySelectorAll(selector)]}catch{return}
     parents.forEach(parent=>{
       parent.querySelectorAll(":scope > [data-site-custom-block]").forEach(node=>node.remove());
@@ -44,6 +44,7 @@ function applyTheme(doc,globals){
 export default function SiteRuntimeOverrides(){
   useEffect(()=>{
     let dead=false;
+    let cleanupObserver=()=>{};
     async function load(){
       try{
         const response=await fetch("/api/site-content",{cache:"no-store"});
@@ -56,10 +57,15 @@ export default function SiteRuntimeOverrides(){
         const pageContent=content.pages?.[path]||{};
         applyElementOverrides(document,pageContent);
         applyTheme(document,content.globals||{});
+        // Service details and other interactive sections may be mounted after
+        // the initial page load. Re-apply element overrides when new DOM nodes appear.
+        const observer=new MutationObserver(()=>applyElementOverrides(document,pageContent,false));
+        observer.observe(document.documentElement,{childList:true,subtree:true});
+        cleanupObserver=()=>observer.disconnect();
       }catch{}
     }
     load();
-    return()=>{dead=true};
+    return()=>{dead=true;cleanupObserver()};
   },[]);
   return null;
 }
