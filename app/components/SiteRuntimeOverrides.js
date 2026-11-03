@@ -11,7 +11,7 @@ function applyElementOverrides(doc,pageContent,includeCustomBlocks=true){
       if(cfg.hidden===true)el.style.display="none";
       if(cfg.hidden===false)el.style.removeProperty("display");
       if(cfg.text!=null&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION","UL","OL"].includes(el.tagName)&&el.textContent!==String(cfg.text))el.textContent=String(cfg.text);
-      if(el.tagName==="UL"||el.tagName==="OL"){el.querySelectorAll(":scope > [data-site-editor-list-item]").forEach(node=>node.remove());(Array.isArray(cfg.appendListItems)?cfg.appendListItems:[]).forEach(item=>{const li=doc.createElement("li");li.textContent=String(item);li.setAttribute("data-site-editor-list-item","true");el.appendChild(li)})}
+      if(el.tagName==="UL"||el.tagName==="OL"){const desiredItems=(Array.isArray(cfg.appendListItems)?cfg.appendListItems:[]).map(item=>String(item));const existingNodes=[...el.querySelectorAll(":scope > [data-site-editor-list-item]")];const existingItems=existingNodes.map(node=>node.textContent||"");const unchanged=existingItems.length===desiredItems.length&&existingItems.every((item,index)=>item===desiredItems[index]);if(!unchanged){existingNodes.forEach(node=>node.remove());desiredItems.forEach(item=>{const li=doc.createElement("li");li.textContent=item;li.setAttribute("data-site-editor-list-item","true");el.appendChild(li)})}}
       if(cfg.src&&(el.tagName==="IMG"||el.tagName==="VIDEO"))el.src=String(cfg.src);
       if(cfg.href&&el.tagName==="A")el.href=String(cfg.href);
       if(cfg.styles&&typeof cfg.styles==="object")Object.entries(cfg.styles).forEach(([key,value])=>{
