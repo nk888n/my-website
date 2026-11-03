@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
-import {facialAddons,bodyAddons,allServices} from "../../lib/services";
+import {facialAddons,allServices} from "../../lib/services";
 
 const STORAGE_KEY="vale-beauty-service-selection";
 const CUSTOMER_KEY="vale-customer-session";
@@ -178,7 +178,7 @@ export default function ServicesClient({sections,initialSelection}){
 
   const regular=selected.reduce((a,s)=>a+s.price,0)
     +sel.facialAddons.reduce((a,id)=>a+(facialAddons.find(x=>x.id===id)?.price||0),0)
-    +sel.bodyAddons.reduce((a,id)=>a+(bodyAddons.find(x=>x.id===id)?.price||0),0);
+    ;
   const discountTotal=pricing.reduce((a,x)=>a+x.amount,0);
   const total=Math.max(0,regular-discountTotal);
 
@@ -201,7 +201,6 @@ export default function ServicesClient({sections,initialSelection}){
     if(sel.body)p.set("body",sel.body.id);
     if(sel.eyebrow)p.set("eyebrow","1");
     if(sel.facialAddons.length)p.set("fa",sel.facialAddons.join(","));
-    if(sel.bodyAddons.length)p.set("ba",sel.bodyAddons.join(","));
     return p.toString();
   }
 
