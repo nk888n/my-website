@@ -320,3 +320,9 @@
  .offerPopupTitle{font-size:30px}
  .offerPopupCountdown{margin-bottom:10px}
 }
+
+
+/* Secondary action in the homepage offer popup */
+.offerPopupOtherButton{display:block;width:100%;margin-top:9px;padding:12px 10px;text-align:center;border:1px solid #b99a76;background:transparent;color:#70584a;font:700 8px Inter,Arial,sans-serif;letter-spacing:.2em;transition:background .2s,color .2s}
+.offerPopupOtherButton:hover{background:#eee5d9;color:#392c28}
+@media(max-width:650px){.offerPopupOtherButton{padding:11px 10px;margin-top:8px;font-size:8px}}
