@@ -358,3 +358,23 @@
  .offerPopupOtherButton{padding:9px 8px;margin-top:6px;font-size:7px}
  .offerPopupFootnote{font-size:9px;margin-top:7px}
 }
+
+
+/* Mobile offer typography: make the actual service name prominent */
+@media(max-width:650px){
+ .offerPopupBody{padding:15px 17px 14px}
+ .offerPopupBrand{font-size:7px;letter-spacing:.17em;margin-bottom:7px}
+ .offerPopupEyebrow{font-size:7px;letter-spacing:.17em;margin-bottom:5px}
+ .offerPopupTitle{font-size:29px;line-height:1.04;margin:0 0 9px}
+ .offerPopupDescription{font-size:12px;line-height:1.4;margin:0 0 9px!important}
+ .offerPopupOfferLine{padding:8px 0}
+ .offerPopupServices{display:block;color:#352522!important;font:600 15px/1.35 Inter,Arial,sans-serif;letter-spacing:.005em;margin:10px 0 5px;opacity:1;overflow-wrap:anywhere}
+ .offerPopupDuration{font-size:9px;color:#80684f;margin:0 0 8px}
+ .offerPopupCountdown{margin:0 0 9px}
+ .offerPopupCountdown>span{font-size:7px}
+ .offerPopupCountdown>div>div{padding:6px 2px}
+ .offerPopupCountdown b{font-size:17px}
+ .offerPopupButton{padding:12px 9px;font-size:8px}
+ .offerPopupOtherButton{padding:10px 9px;font-size:8px}
+ .offerPopupFootnote{font-size:10px;margin-top:8px}
+}
