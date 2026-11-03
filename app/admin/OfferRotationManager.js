@@ -12,7 +12,7 @@ export default function OfferRotationManager({pin,offers=[]}){
  function removeSlot(i){patch("slots",schedule.slots.length===1?[blankSlot()]:schedule.slots.filter((_,n)=>n!==i))}
  async function save(){setLoading(true);setMessage("");try{const slots=schedule.slots.map(s=>({offer_id:s.offer_id,duration_minutes:Number(s.hours||0)*60+Number(s.minutes||0)}));const r=await fetch("/api/admin/offers/rotation",{method:"POST",headers:{"content-type":"application/json","x-admin-pin":pin},body:JSON.stringify({...schedule,slots})}),j=await r.json();if(!r.ok)throw Error(j.error||"Unable to save schedule.");setMessage(j.message||"Rotation schedule saved.")}catch(e){setMessage(e.message)}finally{setLoading(false)}}
  const total=schedule.slots.reduce((n,s)=>n+Number(s.hours||0)*60+Number(s.minutes||0),0);
- return <section className="offerRotationPanel">
+ return <section id="smart-offer-rotation" className="offerRotationPanel">
   <div className="filterHeader"><div><h4>Smart Offer Rotation</h4><p className="muted small">Choose which offer appears, for how long, and repeat the sequence until your rotation end date.</p></div><span className="offerRotationPill">Automatic rotation</span></div>
   <div className="offerRotationDates"><label>Rotation starts<input type="datetime-local" value={schedule.starts_at} onChange={e=>patch("starts_at",e.target.value)}/></label><label>Rotation ends<input type="datetime-local" value={schedule.ends_at} onChange={e=>patch("ends_at",e.target.value)}/></label></div>
   <div className="offerRotationRows"><b>Rotation sequence</b><p className="muted small">Add the same offer more than once if you want. Each period starts when the previous one ends.</p>
