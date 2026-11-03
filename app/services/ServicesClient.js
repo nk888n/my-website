@@ -177,8 +177,7 @@ export default function ServicesClient({sections,initialSelection}){
   });
 
   const regular=selected.reduce((a,s)=>a+s.price,0)
-    +sel.facialAddons.reduce((a,id)=>a+(facialAddons.find(x=>x.id===id)?.price||0),0)
-    ;
+    +sel.facialAddons.reduce((a,id)=>a+(facialAddons.find(x=>x.id===id)?.price||0),0);
   const discountTotal=pricing.reduce((a,x)=>a+x.amount,0);
   const total=Math.max(0,regular-discountTotal);
 
