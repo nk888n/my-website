@@ -34,7 +34,7 @@ export default function WebsiteEditor({pin}){
   Object.entries(data.elements||{}).forEach(([sel,cfg])=>doc.querySelectorAll(sel).forEach(el=>{
     if(cfg.hidden===true)el.style.display="none";
     if(cfg.hidden===false)el.style.removeProperty("display");
-    if(cfg.text!=null&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION"].includes(el.tagName))el.textContent=cfg.text;
+    if(cfg.text!=null&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION","UL","OL"].includes(el.tagName))el.textContent=cfg.text;
     if(el.tagName==="UL"||el.tagName==="OL"){el.querySelectorAll(":scope > [data-editor-list-item]").forEach(x=>x.remove());(cfg.appendListItems||[]).forEach(item=>{const li=doc.createElement("li");li.textContent=item;li.setAttribute("data-editor-list-item","true");el.appendChild(li)})}
     if(cfg.src&&(el.tagName==="IMG"||el.tagName==="VIDEO"))el.src=cfg.src;
     if(cfg.href&&el.tagName==="A")el.href=cfg.href;
@@ -52,7 +52,7 @@ export default function WebsiteEditor({pin}){
  }
  function handleClick(e){
   let el=e.target?.closest?.("*");if(!el||el.closest("[data-site-editor-ignore]"))return;
-  const list=el.closest("ul,ol");if(list)el=list;
+  const item=el.closest("li");const list=el.closest("ul,ol");if(item)el=item;else if(list)el=list;
   // Let service-card disclosure arrows work inside the editor preview.
   // The user can then select and edit the revealed detail text normally.
   if(el.closest(".cardactions .arrow"))return;
@@ -80,7 +80,7 @@ export default function WebsiteEditor({pin}){
  function updateGlobal(k,v){setContent(prev=>({...prev,globals:{...(prev.globals||{}),[k]:v}}));const root=iframeRef.current?.contentDocument?.documentElement;if(root){const map={background:"--bg",surface:"--cream",text:"--ink",muted:"--muted",primary:"--rose",accent:"--gold",border:"--line",danger:"--danger"};if(map[k])root.style.setProperty(map[k],v)}setDirty(true)}
  function updateStyle(k,v){const next={...styles,[k]:v};setStyles(next);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el)el.style[k]=v||"";updateCfg({styles:next})}
  function addListItem(){if(!selected||!["UL","OL"].includes(selected.tag))return;const value=listItem.trim();if(!value)return;const el=iframeRef.current?.contentDocument?.querySelector(selected.selector);if(el){const li=el.ownerDocument.createElement("li");li.textContent=value;li.setAttribute("data-editor-list-item","true");el.appendChild(li)}setContent(prev=>{const pages={...(prev.pages||{})},current={...(pages[page]||{})},elements={...(current.elements||{})},cfg={...(elements[selected.selector]||{})};cfg.appendListItems=[...(cfg.appendListItems||[]),value];elements[selected.selector]=cfg;pages[page]={...current,elements};return {...prev,pages}});setListItem("");setDirty(true);setMsg("List item added. Save changes to publish.")}
- function changeText(v){setText(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION"].includes(el.tagName))el.textContent=v;updateCfg({text:v})}
+ function changeText(v){if(["UL","OL"].includes(selected?.tag))return;setText(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION"].includes(el.tagName))el.textContent=v;updateCfg({text:v})}
  function changeSrc(v){setSrc(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el&&(el.tagName==="IMG"||el.tagName==="VIDEO"))el.src=v;updateCfg({src:v})}
  function changeHref(v){setHref(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el?.tagName==="A")el.href=v;updateCfg({href:v})}
  function toggleHidden(){const v=!hidden;setHidden(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el)el.style.display=v?"none":"";updateCfg({hidden:v})}
@@ -116,14 +116,15 @@ export default function WebsiteEditor({pin}){
    <aside className="siteEditorPanel">
     {!selected?<><div className="editorTheme"><h4>Theme</h4><p>Changes here affect the visual theme only.</p><div className="editorThemeGrid"><label>Background<input type="color" value={g.background||"#F8F1EE"} onChange={e=>updateGlobal("background",e.target.value)}/></label><label>Surface<input type="color" value={g.surface||"#FCF8F5"} onChange={e=>updateGlobal("surface",e.target.value)}/></label><label>Text<input type="color" value={g.text||"#29202A"} onChange={e=>updateGlobal("text",e.target.value)}/></label><label>Primary<input type="color" value={g.primary||"#A96B76"} onChange={e=>updateGlobal("primary",e.target.value)}/></label><label>Accent<input type="color" value={g.accent||"#B99663"} onChange={e=>updateGlobal("accent",e.target.value)}/></label><label>Border<input type="color" value={g.border||"#E7D8D2"} onChange={e=>updateGlobal("border",e.target.value)}/></label></div></div><div className="editorEmpty"><strong>Click an element</strong><span>Text, image, video, heading or button.</span><span>Booking page is not available here.</span></div><div className="editorAdd"><h4>Add new block</h4><textarea value={addHtml} onChange={e=>setAddHtml(e.target.value)} rows={5}/><button className="textButton" onClick={addBlock}>+ Add to page</button></div></>:<>
      <div className="editorSelected"><span>{selected.tag}</span><strong>{selected.label}</strong></div>
-     {!selected.isMedia&&<label>Text<textarea rows={7} value={text} onChange={e=>changeText(e.target.value)}/></label>}
+     {!selected.isMedia&&!["UL","OL"].includes(selected.tag)&&<label>Text<textarea rows={7} value={text} onChange={e=>changeText(e.target.value)}/></label>}
+     {["UL","OL"].includes(selected.tag)&&<div className="editorAdd"><h4>Add a bullet point</h4><p className="muted small">Your existing points stay in their original order and format.</p><input value={listItem} onChange={e=>setListItem(e.target.value)} placeholder="Write one new point…"/><button className="textButton" onClick={addListItem} disabled={!listItem.trim()}>+ Add point</button></div>}
      {selected.isMedia&&<><label>{selected.tag==="IMG"?"Image":"Video"} URL<input value={src} onChange={e=>changeSrc(e.target.value)}/></label><div className="editorButtons"><button className="textButton" onClick={()=>openUpload(selected.tag==="IMG"?"image":"video")}>Change {selected.tag==="IMG"?"image":"video"}</button><button className="textButton" onClick={()=>changeSrc("")}>Remove media</button></div></>}
      {selected.tag==="A"&&<label>Link<input value={href} onChange={e=>changeHref(e.target.value)}/></label>}
      <div className="editorTwo"><label>Text color<input type="color" value={styles.color||"#000000"} onChange={e=>updateStyle("color",e.target.value)}/></label><label>Background<input type="color" value={styles.backgroundColor||"#ffffff"} onChange={e=>updateStyle("backgroundColor",e.target.value)}/></label></div>
      <div className="editorTwo"><label>Font size<input placeholder="e.g. 32px" value={styles.fontSize} onChange={e=>updateStyle("fontSize",e.target.value)}/></label><label>Weight<select value={styles.fontWeight||""} onChange={e=>updateStyle("fontWeight",e.target.value)}><option value="">Default</option><option>400</option><option>500</option><option>600</option><option>700</option></select></label></div>
      <div className="editorMove"><h4>Move</h4><div className="moveGrid"><button onClick={()=>moveBy(0,-10)}>↑</button><button onClick={()=>moveBy(-10,0)}>←</button><button onPointerDown={startDrag}>✥ Drag</button><button onClick={()=>moveBy(10,0)}>→</button><button onClick={()=>moveBy(0,10)}>↓</button></div></div>
      <div className="editorButtons"><button className="textButton" onClick={toggleHidden}>{hidden?"Show element":"Hide element"}</button><button className="textButton dangerText" onClick={()=>{setSelected(null);setMsg("")}}>Done</button></div>
-     <div className="editorAdd">{(selected.tag==="UL"||selected.tag==="OL")?<><h4>Add a bullet point</h4><input value={listItem} onChange={e=>setListItem(e.target.value)} placeholder="Write a new point…"/><button className="textButton" onClick={addListItem} disabled={!listItem.trim()}>+ Add point</button></>:<><h4>Add block after this section</h4><textarea value={addHtml} onChange={e=>setAddHtml(e.target.value)} rows={4}/><button className="textButton" onClick={addBlock}>+ Add block</button></>}</div>
+     <div className="editorAdd">{(selected.tag==="UL"||selected.tag==="OL")?null:<><h4>Add block after this section</h4><textarea value={addHtml} onChange={e=>setAddHtml(e.target.value)} rows={4}/><button className="textButton" onClick={addBlock}>+ Add block</button></>}</div>
     </>}
    </aside>
   </div>
