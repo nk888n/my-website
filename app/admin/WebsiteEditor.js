@@ -18,7 +18,7 @@ function readStyles(el){const s=el?.style||{};return{color:s.color||"",backgroun
 
 export default function WebsiteEditor({pin}){
  const iframeRef=useRef(null),fileRef=useRef(null),uploadKind=useRef("image"),dragRef=useRef(null);
- const [page,setPage]=useState("/"),[content,setContent]=useState({pages:{},globals:{}}),[selected,setSelected]=useState(null),[saving,setSaving]=useState(false),[msg,setMsg]=useState(""),[dirty,setDirty]=useState(false),[text,setText]=useState(""),[src,setSrc]=useState(""),[href,setHref]=useState(""),[hidden,setHidden]=useState(false),[styles,setStyles]=useState(readStyles(null)),[addHtml,setAddHtml]=useState("<div style='padding:30px;text-align:center'>New section</div>");
+ const [page,setPage]=useState("/"),[content,setContent]=useState({pages:{},globals:{}}),[selected,setSelected]=useState(null),[saving,setSaving]=useState(false),[msg,setMsg]=useState(""),[dirty,setDirty]=useState(false),[text,setText]=useState(""),[listItem,setListItem]=useState(""),[src,setSrc]=useState(""),[href,setHref]=useState(""),[hidden,setHidden]=useState(false),[styles,setStyles]=useState(readStyles(null)),[addHtml,setAddHtml]=useState("<div style='padding:30px;text-align:center'>New section</div>");
 
  useEffect(()=>{fetch("/api/site-content",{cache:"no-store"}).then(r=>r.json()).then(j=>setContent(j.content||{pages:{},globals:{}})).catch(()=>{})},[]);
  useEffect(()=>{setSelected(null);setMsg("");if(iframeRef.current)iframeRef.current.src=page},[page]);
@@ -35,6 +35,7 @@ export default function WebsiteEditor({pin}){
     if(cfg.hidden===true)el.style.display="none";
     if(cfg.hidden===false)el.style.removeProperty("display");
     if(cfg.text!=null&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION"].includes(el.tagName))el.textContent=cfg.text;
+    if(el.tagName==="UL"||el.tagName==="OL"){el.querySelectorAll(":scope > [data-editor-list-item]").forEach(x=>x.remove());(cfg.appendListItems||[]).forEach(item=>{const li=doc.createElement("li");li.textContent=item;li.setAttribute("data-editor-list-item","true");el.appendChild(li)})}
     if(cfg.src&&(el.tagName==="IMG"||el.tagName==="VIDEO"))el.src=cfg.src;
     if(cfg.href&&el.tagName==="A")el.href=cfg.href;
     if(cfg.styles)Object.entries(cfg.styles).forEach(([k,v])=>el.style[k]=v||"");
@@ -50,7 +51,8 @@ export default function WebsiteEditor({pin}){
   doc.addEventListener("click",handleClick,true);
  }
  function handleClick(e){
-  const el=e.target?.closest?.("*");if(!el||el.closest("[data-site-editor-ignore]"))return;
+  let el=e.target?.closest?.("*");if(!el||el.closest("[data-site-editor-ignore]"))return;
+  const list=el.closest("ul,ol");if(list)el=list;
   // Let service-card disclosure arrows work inside the editor preview.
   // The user can then select and edit the revealed detail text normally.
   if(el.closest(".cardactions .arrow"))return;
@@ -60,7 +62,7 @@ export default function WebsiteEditor({pin}){
   const savedTransform=cfg.styles?.transform||"";
   const match=/translate\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px\s*\)/.exec(savedTransform);
   setSelected({selector:sel,tag:el.tagName,label:elementLabel(el),isMedia:["IMG","VIDEO"].includes(el.tagName),x:match?Number(match[1]):0,y:match?Number(match[2]):0});
-  setText(cfg.text!=null?cfg.text:(el.tagName==="IMG"?el.alt||"":el.tagName==="VIDEO"?"":el.innerText||""));
+  setText(cfg.text!=null?cfg.text:(el.tagName==="IMG"?el.alt||"":el.tagName==="VIDEO"?"":el.innerText||""));setListItem("");
   setSrc(cfg.src||el.currentSrc||el.src||"");setHref(cfg.href||el.href||"");setHidden(cfg.hidden===true);setStyles({...readStyles(el),...(cfg.styles||{})});
   clearOutline(el.ownerDocument);el.setAttribute("data-editor-selected","true");el.style.outline="2px solid #b88b6a";
  }
@@ -77,6 +79,7 @@ export default function WebsiteEditor({pin}){
  useEffect(()=>{if(iframeRef.current?.contentDocument)applyPreview()},[content,page]);
  function updateGlobal(k,v){setContent(prev=>({...prev,globals:{...(prev.globals||{}),[k]:v}}));const root=iframeRef.current?.contentDocument?.documentElement;if(root){const map={background:"--bg",surface:"--cream",text:"--ink",muted:"--muted",primary:"--rose",accent:"--gold",border:"--line",danger:"--danger"};if(map[k])root.style.setProperty(map[k],v)}setDirty(true)}
  function updateStyle(k,v){const next={...styles,[k]:v};setStyles(next);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el)el.style[k]=v||"";updateCfg({styles:next})}
+ function addListItem(){if(!selected||!["UL","OL"].includes(selected.tag))return;const value=listItem.trim();if(!value)return;const el=iframeRef.current?.contentDocument?.querySelector(selected.selector);if(el){const li=el.ownerDocument.createElement("li");li.textContent=value;li.setAttribute("data-editor-list-item","true");el.appendChild(li)}setContent(prev=>{const pages={...(prev.pages||{})},current={...(pages[page]||{})},elements={...(current.elements||{})},cfg={...(elements[selected.selector]||{})};cfg.appendListItems=[...(cfg.appendListItems||[]),value];elements[selected.selector]=cfg;pages[page]={...current,elements};return {...prev,pages}});setListItem("");setDirty(true);setMsg("List item added. Save changes to publish.")}
  function changeText(v){setText(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el&&!["IMG","VIDEO","INPUT","TEXTAREA","SELECT","OPTION"].includes(el.tagName))el.textContent=v;updateCfg({text:v})}
  function changeSrc(v){setSrc(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el&&(el.tagName==="IMG"||el.tagName==="VIDEO"))el.src=v;updateCfg({src:v})}
  function changeHref(v){setHref(v);const el=iframeRef.current?.contentDocument?.querySelector(selected?.selector);if(el?.tagName==="A")el.href=v;updateCfg({href:v})}
@@ -120,7 +123,7 @@ export default function WebsiteEditor({pin}){
      <div className="editorTwo"><label>Font size<input placeholder="e.g. 32px" value={styles.fontSize} onChange={e=>updateStyle("fontSize",e.target.value)}/></label><label>Weight<select value={styles.fontWeight||""} onChange={e=>updateStyle("fontWeight",e.target.value)}><option value="">Default</option><option>400</option><option>500</option><option>600</option><option>700</option></select></label></div>
      <div className="editorMove"><h4>Move</h4><div className="moveGrid"><button onClick={()=>moveBy(0,-10)}>↑</button><button onClick={()=>moveBy(-10,0)}>←</button><button onPointerDown={startDrag}>✥ Drag</button><button onClick={()=>moveBy(10,0)}>→</button><button onClick={()=>moveBy(0,10)}>↓</button></div></div>
      <div className="editorButtons"><button className="textButton" onClick={toggleHidden}>{hidden?"Show element":"Hide element"}</button><button className="textButton dangerText" onClick={()=>{setSelected(null);setMsg("")}}>Done</button></div>
-     <div className="editorAdd"><h4>Add block after this section</h4><textarea value={addHtml} onChange={e=>setAddHtml(e.target.value)} rows={4}/><button className="textButton" onClick={addBlock}>+ Add block</button></div>
+     <div className="editorAdd">{(selected.tag==="UL"||selected.tag==="OL")?<><h4>Add a bullet point</h4><input value={listItem} onChange={e=>setListItem(e.target.value)} placeholder="Write a new point…"/><button className="textButton" onClick={addListItem} disabled={!listItem.trim()}>+ Add point</button></>:<><h4>Add block after this section</h4><textarea value={addHtml} onChange={e=>setAddHtml(e.target.value)} rows={4}/><button className="textButton" onClick={addBlock}>+ Add block</button></>}</div>
     </>}
    </aside>
   </div>
