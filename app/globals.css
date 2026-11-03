@@ -326,3 +326,35 @@
 .offerPopupOtherButton{display:block;width:100%;margin-top:9px;padding:12px 10px;text-align:center;border:1px solid #b99a76;background:transparent;color:#70584a;font:700 8px Inter,Arial,sans-serif;letter-spacing:.2em;transition:background .2s,color .2s}
 .offerPopupOtherButton:hover{background:#eee5d9;color:#392c28}
 @media(max-width:650px){.offerPopupOtherButton{padding:11px 10px;margin-top:8px;font-size:8px}}
+
+
+/* Compact mobile offer modal: keep the offer visible without a full-page poster */
+@media(max-width:650px){
+ .offerPopupBackdrop{padding:8px;align-items:center;overflow:hidden}
+ .offerPopup{width:calc(100vw - 16px);max-height:86dvh;max-height:86vh;margin:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+ .offerPopupLayout{display:flex;flex-direction:column;min-height:0}
+ .offerPopupVisual{width:100%;height:205px;min-height:205px;max-height:205px;aspect-ratio:auto;overflow:hidden;background:#e9dfd5}
+ .offerPopupImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 28%;background:#e9dfd5}
+ .offerPopupImageCaption{display:none}
+ .offerPopupBody{padding:14px 16px 13px}
+ .offerPopupBrand{font-size:7px;letter-spacing:.16em;margin-bottom:7px}
+ .offerPopupEyebrow{font-size:6px;letter-spacing:.15em;margin-bottom:5px}
+ .offerPopupTitle{font-size:27px;line-height:1.02;margin:0 0 7px}
+ .offerPopupDescription{font-size:11px;line-height:1.35;margin:0 0 8px!important}
+ .offerPopupOfferLine{padding:7px 0;gap:6px}
+ .offerPopupPrice{gap:7px}
+ .offerPopupPrice del{font-size:10px}
+ .offerPopupPrice strong{font-size:28px}
+ .offerPopupLimited{font-size:6px;padding:5px 6px}
+ .offerPopupServices{font-size:9px;line-height:1.35;margin:7px 0 3px}
+ .offerPopupDuration{font-size:8px;margin:0 0 7px}
+ .offerPopupCountdown{margin:0 0 8px}
+ .offerPopupCountdown>span{font-size:6px;margin-bottom:4px}
+ .offerPopupCountdown>div{gap:3px}
+ .offerPopupCountdown>div>div{padding:5px 2px}
+ .offerPopupCountdown b{font-size:16px}
+ .offerPopupCountdown small{font-size:6px}
+ .offerPopupButton{padding:11px 8px;font-size:7px}
+ .offerPopupOtherButton{padding:9px 8px;margin-top:6px;font-size:7px}
+ .offerPopupFootnote{font-size:9px;margin-top:7px}
+}
