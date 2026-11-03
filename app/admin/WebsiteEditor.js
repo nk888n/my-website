@@ -51,6 +51,9 @@ export default function WebsiteEditor({pin}){
  }
  function handleClick(e){
   const el=e.target?.closest?.("*");if(!el||el.closest("[data-site-editor-ignore]"))return;
+  // Let service-card disclosure arrows work inside the editor preview.
+  // The user can then select and edit the revealed detail text normally.
+  if(el.closest(".cardactions .arrow"))return;
   e.preventDefault();e.stopPropagation();
   const sel=selectorFor(el);if(!sel)return;
   const cfg=pageData().elements?.[sel]||{};
