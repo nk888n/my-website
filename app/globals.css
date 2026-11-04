@@ -526,3 +526,67 @@
  .offerPopupBackdrop .offerPopupServices{font-size:11px !important}
  .offerPopupBackdrop .offerPopupTitle{font-size:20px !important}
 }
+
+
+/* Public offers cards: mobile side-by-side layout, with the full image visible */
+@media screen and (max-width:700px){
+ .offersPage{width:98% !important}
+ .offersSection{padding:25px 0 42px !important}
+ .offersPublicGrid{width:100% !important;gap:14px !important}
+ .offersPublicGrid .offerPublicCard{
+  display:grid !important;
+  grid-template-columns:minmax(0, .82fr) minmax(0, 1.18fr) !important;
+  grid-template-rows:1fr !important;
+  align-items:stretch !important;
+  width:100% !important;
+  min-width:0 !important;
+ }
+ .offersPublicGrid .offerPublicMedia{
+  grid-column:1 !important;grid-row:1 !important;
+  position:relative !important;align-self:stretch !important;
+  width:100% !important;height:100% !important;min-height:300px !important;
+  aspect-ratio:auto !important;background:#2b2422 !important;overflow:hidden !important
+ }
+ .offersPublicGrid .offerPublicImage{
+  position:absolute !important;inset:0 !important;
+  display:block !important;width:100% !important;height:100% !important;
+  object-fit:contain !important;object-position:center center !important;
+  filter:none !important
+ }
+ .offersPublicGrid .offerMediaBrand{left:6px !important;right:6px !important;bottom:7px !important;font-size:6px !important;letter-spacing:.08em !important;text-align:center !important}
+ .offersPublicGrid .offerPublicBody{
+  grid-column:2 !important;grid-row:1 !important;
+  min-width:0 !important;padding:13px 10px 12px !important;
+  display:flex !important;flex-direction:column !important;justify-content:center !important
+ }
+ .offersPublicGrid .offerPublicBody>.gold{font-size:7px !important;letter-spacing:.12em !important;line-height:1.35 !important}
+ .offersPublicGrid .offerPublicBody h2{font-size:clamp(21px,6vw,29px) !important;line-height:1.03 !important;margin:7px 0 8px !important;overflow-wrap:anywhere !important}
+ .offersPublicGrid .offerPublicBody>p{font-size:10px !important;line-height:1.45 !important;margin:0 0 8px !important}
+ .offersPublicGrid .offerPublicPrices{gap:5px !important;flex-wrap:wrap !important;justify-content:flex-start !important;padding:8px 0 !important;margin:7px 0 !important}
+ .offersPublicGrid .offerPublicPrices del{font-size:9px !important}
+ .offersPublicGrid .offerPublicPrices strong{font-size:clamp(23px,6vw,29px) !important;line-height:1 !important}
+ .offersPublicGrid .offerPublicPrices span{font-size:5px !important;letter-spacing:.07em !important;padding:4px !important;margin-left:0 !important}
+ .offersPublicGrid .offerServiceSummary{padding:7px !important;margin:7px 0 3px !important}
+ .offersPublicGrid .offerServiceSummaryLabel{font-size:7px !important;letter-spacing:.1em !important}
+ .offersPublicGrid .offerServiceSummary>div{grid-template-columns:10px minmax(0,1fr) !important;gap:4px !important;padding:4px 0 !important}
+ .offersPublicGrid .offerServiceSummary>div>b{font-size:10px !important;line-height:1.3 !important;overflow-wrap:anywhere !important}
+ .offersPublicGrid .offerServiceSummary>div>small{grid-column:2 !important;font-size:8px !important}
+ .offersPublicGrid .offerPublicBody .offerPopupCountdown{margin:8px 0 !important}
+ .offersPublicGrid .offerPublicBody .offerPopupCountdown>span{font-size:6px !important;letter-spacing:.1em !important}
+ .offersPublicGrid .offerPublicBody .offerPopupCountdown>div{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:3px !important}
+ .offersPublicGrid .offerPublicBody .offerPopupCountdown>div>div{padding:5px 2px !important}
+ .offersPublicGrid .offerPublicBody .offerPopupCountdown b{font-size:15px !important}
+ .offersPublicGrid .offerPublicBody .offerPopupCountdown small{font-size:6px !important}
+ .offersPublicGrid .offerDetailsToggle{font-size:10px !important;padding:9px 0 !important;margin-top:3px !important}
+ .offersPublicGrid .offerServiceDetails{max-height:none !important;overflow:visible !important}
+ .offersPublicGrid .offerServiceDetails h3{font-size:15px !important}
+ .offersPublicGrid .offerServiceDetails small,.offersPublicGrid .offerServiceDetails p,.offersPublicGrid .offerServiceDetails ul{font-size:10px !important;line-height:1.5 !important}
+ .offersPublicGrid .offerPublicFooter{font-size:6px !important;letter-spacing:.04em !important;gap:4px !important;padding:7px 0 !important}
+ .offersPublicGrid .offerAddButton{font-size:7px !important;letter-spacing:.08em !important;padding:10px 5px !important;line-height:1.35 !important}
+}
+@media screen and (max-width:360px){
+ .offersPublicGrid .offerPublicCard{grid-template-columns:minmax(0,.76fr) minmax(0,1.24fr) !important}
+ .offersPublicGrid .offerPublicMedia{min-height:285px !important}
+ .offersPublicGrid .offerPublicBody{padding:10px 8px !important}
+ .offersPublicGrid .offerPublicBody h2{font-size:21px !important}
+}
