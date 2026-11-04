@@ -590,3 +590,51 @@
  .offersPublicGrid .offerPublicBody{padding:10px 8px !important}
  .offersPublicGrid .offerPublicBody h2{font-size:21px !important}
 }
+
+
+/* Refined mobile offers: editorial split card, edge-to-edge image */
+@media screen and (max-width:700px){
+ .offersPage{width:100% !important;padding-left:9px !important;padding-right:9px !important}
+ .offersSection{padding:22px 0 38px !important}
+ .offersPublicGrid{width:100% !important;gap:16px !important}
+ .offersPublicGrid .offerPublicCard{
+  grid-template-columns:40% minmax(0,60%) !important;
+  border-radius:3px !important;
+  align-items:stretch !important;
+  overflow:hidden !important;
+  box-shadow:0 5px 18px rgba(67,47,39,.08) !important
+ }
+ .offersPublicGrid .offerPublicMedia{
+  min-height:0 !important;height:auto !important;
+  background:#d8c7b4 !important;
+  overflow:hidden !important
+ }
+ .offersPublicGrid .offerPublicImage{
+  object-fit:cover !important;
+  object-position:center center !important;
+  background:transparent !important;
+  filter:saturate(.92) !important
+ }
+ .offersPublicGrid .offerMediaBrand{display:none !important}
+ .offersPublicGrid .offerPublicBody{padding:14px 11px 13px !important}
+ .offersPublicGrid .offerPublicBody>.gold{font-size:7px !important;letter-spacing:.13em !important}
+ .offersPublicGrid .offerPublicBody h2{font-size:clamp(22px,6.1vw,30px) !important;margin:7px 0 10px !important}
+ .offersPublicGrid .offerPublicPrices{display:flex !important;align-items:center !important;gap:6px !important;padding:9px 0 !important}
+ .offersPublicGrid .offerPublicPrices strong{font-size:clamp(24px,6.4vw,31px) !important}
+ .offersPublicGrid .offerPublicPrices span{margin-left:auto !important;font-size:5px !important;white-space:normal !important;text-align:center !important}
+ .offersPublicGrid .offerServiceSummary{padding:8px 8px !important}
+ .offersPublicGrid .offerServiceSummary>div{grid-template-columns:12px minmax(0,1fr) !important}
+ .offersPublicGrid .offerServiceSummary>div>b{font-size:11px !important}
+ .offersPublicGrid .offerServiceSummary>div>small{grid-column:2 !important;font-size:9px !important}
+ .offersPublicGrid .offerPublicBody .offerPopupCountdown>div{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+ .offersPublicGrid .offerDetailsToggle{font-size:11px !important}
+ .offersPublicGrid .offerPublicFooter{font-size:6px !important}
+ .offersPublicGrid .offerAddButton{font-size:7px !important;padding:11px 5px !important}
+}
+@media screen and (max-width:380px){
+ .offersPublicGrid .offerPublicCard{grid-template-columns:38% minmax(0,62%) !important}
+ .offersPublicGrid .offerPublicBody{padding:11px 8px 10px !important}
+ .offersPublicGrid .offerPublicBody h2{font-size:22px !important}
+ .offersPublicGrid .offerPublicPrices{gap:4px !important}
+ .offersPublicGrid .offerPublicPrices strong{font-size:23px !important}
+}
