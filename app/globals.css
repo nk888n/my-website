@@ -855,3 +855,11 @@
 .offerPublicCardVip .offerAddButton{background:linear-gradient(100deg,#70404a,#9b6a55);border:1px solid #b58a58}
 @keyframes vipRibbonShine{0%,65%{background-position:100% 0}100%{background-position:-100% 0}}
 @media(prefers-reduced-motion:reduce){.vipOfferRibbon{animation:none}}
+
+/* Women-only policy acknowledgement next to booking confirmation */
+.womenOnlyNotice{margin:18px 0 12px;padding:13px 15px;border:1px solid #d8c5b7;background:#fbf5ef}
+.womenOnlyCheck{display:flex;align-items:flex-start;gap:11px;cursor:pointer}
+.womenOnlyCheck input{width:17px;height:17px;flex:0 0 17px;margin:2px 0 0;accent-color:#75434a}
+.womenOnlyCheck span{display:grid;gap:4px}
+.womenOnlyCheck strong{font-size:10px;letter-spacing:.16em;color:#79434b}
+.womenOnlyCheck small{font-size:12px;line-height:1.5;color:#76665f}
