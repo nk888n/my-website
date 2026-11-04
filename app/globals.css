@@ -489,3 +489,40 @@
  .offerPopupServices{font-size:11px}
  .offerPopupTitle{font-size:20px}
 }
+
+
+/* Force desktop-style split offer composition in mobile and in-app browsers */
+@media screen and (max-width: 900px){
+ .offerPopupBackdrop .offerPopup{width: min(760px, calc(100vw - 14px)) !important;max-height: 90dvh !important;max-height: 90vh !important;overflow-x:hidden !important;overflow-y:auto !important}
+ .offerPopupBackdrop .offerPopupLayout{display:grid !important;grid-template-columns:minmax(0, 0.82fr) minmax(0, 1.18fr) !important;grid-template-rows:minmax(0, auto) !important;min-height:0 !important;align-items:stretch !important}
+ .offerPopupBackdrop .offerPopupVisual{grid-column:1 !important;grid-row:1 !important;position:relative !important;width:100% !important;height:auto !important;min-height:100% !important;max-height:none !important;align-self:stretch !important;overflow:hidden !important}
+ .offerPopupBackdrop .offerPopupImage{position:absolute !important;inset:0 !important;display:block !important;width:100% !important;height:100% !important;max-height:none !important;object-fit:cover !important;object-position:center !important}
+ .offerPopupBackdrop .offerPopupBody{grid-column:2 !important;grid-row:1 !important;display:flex !important;flex-direction:column !important;justify-content:center !important;min-width:0 !important;padding:36px 12px 14px !important;text-align:left !important}
+ .offerPopupBackdrop .offerPopupBrand{font-size:7px !important;letter-spacing:.12em !important;line-height:1.4 !important;margin-bottom:7px !important}
+ .offerPopupBackdrop .offerPopupEyebrow{font-size:6px !important;letter-spacing:.11em !important;line-height:1.4 !important;margin-bottom:5px !important}
+ .offerPopupBackdrop .offerPopupTitle{font-size:clamp(20px, 5vw, 30px) !important;line-height:1.05 !important;margin:0 0 8px !important}
+ .offerPopupBackdrop .offerPopupDescription{font-size:10px !important;line-height:1.4 !important;margin:0 0 8px !important}
+ .offerPopupBackdrop .offerPopupOfferLine{display:flex !important;flex-direction:column !important;align-items:flex-start !important;gap:6px !important;padding:8px 0 !important}
+ .offerPopupBackdrop .offerPopupPrice{justify-content:flex-start !important;gap:7px !important;flex-wrap:wrap !important;margin:0 !important}
+ .offerPopupBackdrop .offerPopupPrice strong{font-size:clamp(24px, 5.5vw, 32px) !important}
+ .offerPopupBackdrop .offerPopupPrice del{font-size:9px !important}
+ .offerPopupBackdrop .offerPopupLimited{font-size:6px !important;padding:4px 6px !important}
+ .offerPopupBackdrop .offerPopupServices{display:block !important;color:#352522 !important;font:600 12px/1.4 Inter,Arial,sans-serif !important;letter-spacing:0 !important;margin:9px 0 5px !important;overflow-wrap:anywhere !important}
+ .offerPopupBackdrop .offerPopupDuration{font-size:8px !important;line-height:1.4 !important;margin:0 0 8px !important}
+ .offerPopupBackdrop .offerPopupCountdown{margin:0 0 9px !important}
+ .offerPopupBackdrop .offerPopupCountdown>span{font-size:6px !important;letter-spacing:.1em !important;margin-bottom:5px !important}
+ .offerPopupBackdrop .offerPopupCountdown>div{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:4px !important}
+ .offerPopupBackdrop .offerPopupCountdown>div>div{padding:5px 2px !important;text-align:center !important}
+ .offerPopupBackdrop .offerPopupCountdown b{font-size:16px !important}
+ .offerPopupBackdrop .offerPopupCountdown small{font-size:6px !important}
+ .offerPopupBackdrop .offerPopupButton{display:block !important;width:100% !important;padding:10px 5px !important;font-size:7px !important;line-height:1.3 !important;letter-spacing:.08em !important;white-space:normal !important}
+ .offerPopupBackdrop .offerPopupOtherButton{display:block !important;width:100% !important;padding:9px 4px !important;margin-top:6px !important;font-size:6px !important;letter-spacing:.08em !important;line-height:1.3 !important}
+ .offerPopupBackdrop .offerPopupFootnote{font-size:9px !important;line-height:1.3 !important;margin-top:8px !important}
+ .offerPopupBackdrop .offerPopupClose{top:6px !important;right:6px !important;width:27px !important;height:27px !important;font-size:19px !important}
+}
+@media screen and (max-width: 380px){
+ .offerPopupBackdrop .offerPopupLayout{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr) !important}
+ .offerPopupBackdrop .offerPopupBody{padding-left:8px !important;padding-right:8px !important}
+ .offerPopupBackdrop .offerPopupServices{font-size:11px !important}
+ .offerPopupBackdrop .offerPopupTitle{font-size:20px !important}
+}
