@@ -692,3 +692,46 @@
 @media(max-width:700px){
   .navlinks a.offersNavLink{padding:8px 9px;margin:-8px 0;font-size:9px}
 }
+
+
+/* Homepage featured offers banner: wide, editorial and unmistakably promotional */
+.offersLanding,.offersLandingFallback{
+  position:relative;isolation:isolate;display:flex;align-items:center;
+  min-height:clamp(390px,42vw,510px);margin:24px 0 34px;overflow:hidden;
+  background:linear-gradient(115deg,#3c2029,#9e4f50 58%,#d4a78e);
+  border:1px solid rgba(185,150,99,.48);
+}
+.offersLandingImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 42%;z-index:-2}
+.offersLandingShade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(28,17,24,.84) 0%,rgba(40,23,30,.68) 42%,rgba(40,23,30,.08) 100%)}
+.offersLandingContent{position:relative;width:min(650px,70%);padding:clamp(28px,5vw,66px);color:#fff}
+.offersLandingEyebrow{display:block;font-size:10px;letter-spacing:.28em;color:#f2d9c2;margin-bottom:18px}
+.offersLandingPill{display:inline-flex;padding:8px 12px;border:1px solid rgba(242,217,194,.8);background:rgba(166,71,62,.78);font-size:10px;letter-spacing:.17em;font-weight:700}
+.offersLandingContent h1{font-family:Fraunces,Georgia,serif;font-size:clamp(42px,6vw,76px);line-height:.98;margin:18px 0 12px;max-width:650px;text-shadow:0 3px 18px rgba(0,0,0,.24)}
+.offersLandingContent p{font-size:15px;line-height:1.65;max-width:460px;color:#fff1e8;margin:0 0 16px}
+.offersLandingPrice{display:flex;align-items:center;gap:15px;margin:18px 0 22px}
+.offersLandingPrice del{font-size:18px;color:rgba(255,255,255,.68)}
+.offersLandingPrice strong{font-size:34px;color:#ffe0b8;letter-spacing:.02em}
+.offersLandingButton,.offersLandingFallback a{display:inline-flex;align-items:center;gap:18px;padding:15px 25px;background:#f5e7dc;color:#4a2730;font-size:11px;font-weight:800;letter-spacing:.17em;border:1px solid #f5e7dc;transition:transform .2s,background .2s}
+.offersLandingButton:hover,.offersLandingFallback a:hover{transform:translateY(-3px);background:#fff}
+.offersLandingButton span{font-size:18px}
+.offersLandingDots{display:flex;gap:8px;margin-top:25px}
+.offersLandingDots button{width:22px;height:4px;border:0;padding:0;background:rgba(255,255,255,.45);cursor:pointer}
+.offersLandingDots button.active{width:42px;background:#f5d2aa}
+.offersLandingSideNote{position:absolute;right:24px;bottom:22px;display:grid;gap:5px;text-align:right;color:#fff;text-shadow:0 2px 8px #321d25}
+.offersLandingSideNote span{font:500 13px Fraunces,Georgia,serif;letter-spacing:.18em}
+.offersLandingSideNote i{font-style:normal;font-size:8px;letter-spacing:.2em;color:#f2d9c2}
+.offersLandingFallback>div{padding:55px;color:white}
+.offersLandingFallback span{font-size:10px;letter-spacing:.25em}
+.offersLandingFallback h1{font:400 clamp(42px,6vw,72px) Fraunces,Georgia,serif;max-width:700px}
+@media(max-width:700px){
+ .offersLanding,.offersLandingFallback{min-height:460px;margin:14px 0 28px}
+ .offersLandingImage{object-position:center}
+ .offersLandingShade{background:linear-gradient(90deg,rgba(28,17,24,.78),rgba(40,23,30,.36)),linear-gradient(0deg,rgba(28,17,24,.3),transparent)}
+ .offersLandingContent{width:100%;padding:28px 22px 48px}
+ .offersLandingContent h1{font-size:clamp(38px,11vw,54px)}
+ .offersLandingContent p{font-size:13px;max-width:310px}
+ .offersLandingPrice strong{font-size:30px}
+ .offersLandingSideNote{right:14px;bottom:13px}
+ .offersLandingFallback>div{padding:28px 22px}
+}
+@media(prefers-reduced-motion:reduce){.offersLandingButton,.offersLandingFallback a{transition:none}}
