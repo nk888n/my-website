@@ -40,7 +40,7 @@ function Card({s,onSelect,selected,onRemove,discount,reward}){
           <div className="discountBadge" style={{background:"#fbf2df",color:"#8d6b2f"}}>YOUR GIFT · FREE</div>
         ) : (discount || winnerOff>0) ? (
           <div className="discountBadge">
-            {discount?.winner ? "WINNER "+Number(discount.value)+"% OFF" : winnerOff>0 ? "WINNER "+Number(reward?.prize_value??reward?.reward_value??0)+"% OFF" : (discount.kind==="percent"?`SPECIAL ${discount.value}% OFF`:`SPECIAL ${Number(discount.value).toFixed(2)} OFF`)}
+            {discount?.winner ? "WINNER "+Number(discount.value)+"% OFF" : winnerOff>0 ? "WINNER "+Number(reward?.prize_value??reward?.reward_value??0)+"% OFF" : (String(discount.note||"").match(/occasion:\s*([^—]+)/i)?.[1]?.trim() ? `${String(discount.note).match(/occasion:\s*([^—]+)/i)[1].trim().toUpperCase()} · ` : "SPECIAL · ") + (discount.kind==="percent"?`${discount.value}% OFF`:`${Number(discount.value).toFixed(2)} OFF`)}
           </div>
         ) : null}
         <div className="cardactions">
