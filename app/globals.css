@@ -378,3 +378,15 @@
  .offerPopupOtherButton{padding:10px 9px;font-size:8px}
  .offerPopupFootnote{font-size:10px;margin-top:8px}
 }
+
+
+/* Offer rotation: distinguish saved offers with the same title */
+.offerRotationSelect{display:grid;gap:7px;min-width:0}
+.offerRotationOfferDetails{display:grid;gap:4px;padding:9px 10px;background:#faf6f2;border:1px solid var(--line);font-size:11px;min-width:0}
+.offerRotationOfferDetails>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.offerRotationOfferDetails small{font-size:10px;color:#766b65;overflow-wrap:anywhere}
+.offerRotationStatus{display:inline-flex;padding:3px 7px;border-radius:2px;background:#eee8e2;color:#66554b;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.offerRotationStatus.active{background:#e5f1e8;color:#27623b}
+.offerRotationStatus.disabled,.offerRotationStatus.expired{background:#f8e8e6;color:#963f38}
+.offerRotationStatus.scheduled{background:#fff2d8;color:#8a621e}
+@media(max-width:700px){.offerRotationRow{grid-template-columns:26px minmax(0,1fr) minmax(62px,.45fr) minmax(62px,.45fr)}.offerRotationSelect{grid-column:2/-1;grid-row:1}.offerRotationIndex{grid-column:1;grid-row:1;align-self:start;margin-top:23px}.offerRotationOfferDetails{font-size:10px}.offerRotationRow .textButton{grid-column:2/-1}}
