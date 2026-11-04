@@ -422,3 +422,31 @@
  .offerPopupOtherButton{padding:11px 10px!important;margin-top:7px!important;font-size:8px!important}
  .offerPopupFootnote{font-size:10px!important;margin-top:9px!important}
 }
+
+
+/* Clear, readable offer service names on desktop and mobile */
+.offerPopupServices{font-size:15px!important;line-height:1.55!important;font-weight:600!important;letter-spacing:0!important;color:#493832!important;margin:16px 0 9px!important}
+.offerServiceSummary{display:grid;gap:0;margin:13px 0 5px;padding:10px 13px;background:#f3ece2;border-left:2px solid #b89a6b}
+.offerServiceSummaryLabel{font:700 9px/1.4 Inter,Arial,sans-serif;letter-spacing:.18em;color:#98784e;margin-bottom:5px}
+.offerServiceSummary>div{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:baseline;gap:7px;padding:5px 0;border-bottom:1px solid #e4d8c9}
+.offerServiceSummary>div:last-child{border-bottom:0}
+.offerServiceSummary>div>span{color:#a88654;font-size:13px}
+.offerServiceSummary>div>b{font:600 15px/1.4 Inter,Arial,sans-serif;color:#3c302b}
+.offerServiceSummary>div>small{font:11px Inter,Arial,sans-serif;color:#8a796c;white-space:nowrap}
+.offerDetailsToggle{font-size:15px!important;font-weight:700!important;letter-spacing:.015em!important;padding:16px 2px!important;color:#3e302b!important}
+.offerServiceDetails{max-height:none!important;overflow:visible!important;padding:8px 0!important}
+.offerServiceDetails h3{font-size:22px!important;line-height:1.25!important;margin-bottom:6px!important}
+.offerServiceDetails small{font-size:13px!important}
+.offerServiceDetails p,.offerServiceDetails ul{font-size:14px!important;line-height:1.7!important}
+.offerPublicBody>.gold{font-size:10px!important}
+.offerPublicBody h2{font-size:42px!important}
+@media(max-width:700px){
+ .offerServiceSummary{padding:9px 11px;margin:10px 0 4px}
+ .offerServiceSummary>div>b{font-size:13px}
+ .offerServiceSummary>div>small{font-size:10px}
+ .offerDetailsToggle{font-size:14px!important;padding:14px 2px!important}
+ .offerServiceDetails h3{font-size:19px!important}
+ .offerServiceDetails p,.offerServiceDetails ul{font-size:13px!important}
+ .offerPublicBody h2{font-size:33px!important}
+ .offerPopupServices{font-size:14px!important}
+}
