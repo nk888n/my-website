@@ -638,3 +638,57 @@
  .offersPublicGrid .offerPublicPrices{gap:4px !important}
  .offersPublicGrid .offerPublicPrices strong{font-size:23px !important}
 }
+
+
+/* Make the offers navigation link stand out without changing the site layout */
+.navlinks a.offersNavLink{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:9px 13px;
+  margin:-9px 0;
+  color:#fff;
+  font-weight:700;
+  letter-spacing:.13em;
+  background:linear-gradient(110deg,#7f202b,#b4473c 48%,#8f2630);
+  border:1px solid rgba(226,174,124,.85);
+  box-shadow:0 0 0 1px rgba(130,35,43,.12),0 0 12px rgba(190,65,48,.38);
+  text-shadow:0 1px 2px rgba(0,0,0,.25);
+  animation:offersGlow 2.2s ease-in-out infinite;
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+.navlinks a.offersNavLink::before{
+  content:"🔥";
+  font-size:13px;
+  line-height:1;
+  letter-spacing:0;
+}
+.navlinks a.offersNavLink::after{
+  content:"";
+  position:absolute;
+  inset:-4px;
+  border:1px solid rgba(190,65,48,.42);
+  opacity:0;
+  pointer-events:none;
+  animation:offersRing 2.2s ease-out infinite;
+}
+.navlinks a.offersNavLink:hover{
+  color:#fff;
+  transform:translateY(-2px) scale(1.04);
+  box-shadow:0 0 18px rgba(205,77,48,.62),0 0 30px rgba(205,77,48,.22);
+}
+@keyframes offersGlow{
+  0%,100%{box-shadow:0 0 0 1px rgba(130,35,43,.12),0 0 9px rgba(190,65,48,.3)}
+  50%{box-shadow:0 0 0 1px rgba(130,35,43,.2),0 0 19px rgba(220,91,52,.62)}
+}
+@keyframes offersRing{
+  0%{transform:scale(.96);opacity:.65}
+  100%{transform:scale(1.12);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .navlinks a.offersNavLink,.navlinks a.offersNavLink::after{animation:none}
+}
+@media(max-width:700px){
+  .navlinks a.offersNavLink{padding:8px 9px;margin:-8px 0;font-size:9px}
+}
