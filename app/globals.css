@@ -842,3 +842,16 @@
 .vipOfferShimmer{position:absolute;inset:-100% auto -100% -45%;width:28%;transform:rotate(20deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.48),transparent);animation:vipOfferSweep 4.5s ease-in-out infinite;pointer-events:none}
 @keyframes vipOfferSweep{0%,60%{left:-45%}100%{left:140%}}
 @media(prefers-reduced-motion:reduce){.vipOfferShimmer{animation:none;display:none}}
+
+/* Premium VIP offer card treatment */
+.offerPublicCardVip{position:relative;border:2px solid #bd9659;box-shadow:0 12px 34px rgba(143,103,48,.2),0 0 0 4px rgba(189,150,89,.09);background:linear-gradient(135deg,#fffaf2,#f4e9d9)}
+.offerPublicCardVip::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;border:1px solid rgba(255,255,255,.72)}
+.offerPublicCardVip .offerPublicMedia{position:relative}
+.offerPublicCardVip .offerPublicMedia::after{content:"VIP";position:absolute;top:18px;left:18px;padding:8px 14px;background:linear-gradient(110deg,#9a7139,#d8bb7d,#9a7139);color:#fff;font-size:10px;font-weight:800;letter-spacing:.24em;box-shadow:0 3px 12px rgba(35,20,10,.2)}
+.offerPublicCardVip .offerPublicBody{background:linear-gradient(145deg,#fffaf2,#f4e9d9)}
+.offerPublicCardVip .offerPublicBody .gold{color:#9a7139;font-weight:800;letter-spacing:.2em}
+.vipOfferRibbon{display:inline-flex;align-self:flex-start;align-items:center;gap:7px;padding:7px 11px;margin-bottom:10px;background:linear-gradient(100deg,#8c6533,#c6a46a,#8c6533);background-size:200% 100%;color:white;font-size:9px;font-weight:800;letter-spacing:.17em;box-shadow:0 3px 12px rgba(140,101,51,.2);animation:vipRibbonShine 4s ease-in-out infinite}
+.offerPublicCardVip .offerPublicPrices strong{color:#8a4b50}
+.offerPublicCardVip .offerAddButton{background:linear-gradient(100deg,#70404a,#9b6a55);border:1px solid #b58a58}
+@keyframes vipRibbonShine{0%,65%{background-position:100% 0}100%{background-position:-100% 0}}
+@media(prefers-reduced-motion:reduce){.vipOfferRibbon{animation:none}}
