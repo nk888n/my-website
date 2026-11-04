@@ -450,3 +450,42 @@
  .offerPublicBody h2{font-size:33px!important}
  .offerPopupServices{font-size:14px!important}
 }
+
+
+/* Mobile popup: keep the same side-by-side composition as desktop */
+@media(max-width:650px){
+ .offerPopupBackdrop{padding:7px;align-items:center;overflow:hidden}
+ .offerPopup{width:calc(100vw - 14px);max-height:88dvh;max-height:88vh;overflow-x:hidden;overflow-y:auto}
+ .offerPopupLayout{display:grid;grid-template-columns:minmax(0, .78fr) minmax(0, 1.22fr);min-height:0;align-items:stretch}
+ .offerPopupVisual{grid-column:1;grid-row:1;width:100%;height:auto;min-height:100%;max-height:none;align-self:stretch}
+ .offerPopupImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;background:#e9dfd5}
+ .offerPopupImageCaption{display:none}
+ .offerPopupBody{grid-column:2;grid-row:1;min-width:0;padding:34px 10px 12px;text-align:left;justify-content:center}
+ .offerPopupBrand{font-size:6px;letter-spacing:.11em;line-height:1.4;margin-bottom:7px}
+ .offerPopupEyebrow{font-size:6px;letter-spacing:.1em;line-height:1.4;margin-bottom:5px}
+ .offerPopupTitle{font-size:clamp(20px,6vw,27px);line-height:1.02;margin:0 0 8px;overflow-wrap:anywhere}
+ .offerPopupDescription{font-size:10px;line-height:1.35;margin:0 0 8px!important}
+ .offerPopupOfferLine{padding:7px 0;gap:5px;align-items:flex-start;flex-direction:column}
+ .offerPopupPrice{gap:6px;justify-content:flex-start;flex-wrap:wrap}
+ .offerPopupPrice del{font-size:9px}
+ .offerPopupPrice strong{font-size:25px;line-height:1}
+ .offerPopupLimited{font-size:5px;padding:4px 5px;letter-spacing:.1em}
+ .offerPopupServices{display:block;color:#352522!important;font:600 12px/1.35 Inter,Arial,sans-serif;letter-spacing:0;margin:9px 0 5px;overflow-wrap:anywhere}
+ .offerPopupDuration{font-size:8px;line-height:1.35;letter-spacing:.06em;margin:0 0 8px}
+ .offerPopupCountdown{margin:0 0 9px}
+ .offerPopupCountdown>span{font-size:6px;letter-spacing:.1em;margin-bottom:5px}
+ .offerPopupCountdown>div{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+ .offerPopupCountdown>div>div{padding:5px 2px;text-align:center}
+ .offerPopupCountdown b{font-size:16px;line-height:1.1}
+ .offerPopupCountdown small{font-size:6px}
+ .offerPopupButton{padding:11px 5px;font-size:7px;line-height:1.3;letter-spacing:.1em;white-space:normal}
+ .offerPopupOtherButton{padding:9px 4px;margin-top:6px;font-size:6px;letter-spacing:.1em;line-height:1.3}
+ .offerPopupFootnote{font-size:9px;line-height:1.3;margin-top:8px}
+ .offerPopupClose{top:6px;right:6px;width:27px;height:27px;font-size:19px}
+}
+@media(max-width:360px){
+ .offerPopupLayout{grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr)}
+ .offerPopupBody{padding-left:8px;padding-right:8px}
+ .offerPopupServices{font-size:11px}
+ .offerPopupTitle{font-size:20px}
+}
