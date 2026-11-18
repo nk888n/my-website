@@ -21,7 +21,7 @@ function VipOfferCard({offer}) {
   const included=(offer.services||[]).map(s=>s.name).filter(Boolean);
   return <a className="vipOfferCard" href="/offers" aria-label="View the VIP Deep Cleansing and Back Massage offer">
     <span className="vipOfferImage">{image?<img src={image} alt="VIP Deep Cleansing and Back Massage offer"/>:null}<span className="vipOfferImageShade"/></span>
-    <span className="vipOfferContent"><span className="vipOfferFlag">✦ VIP LIMITED-TIME OFFER ✦</span><strong className="vipOfferTitle">{included.length?included.join(" + "):"Deep Cleansing + Back Massage"}</strong><span className="vipOfferDuration">{Number(offer.total_duration_minutes)||95} MINUTES OF CARE</span><span className="vipOfferPrice"><del>${Number(offer.original_price||140).toFixed(2)}</del><b>${Number(offer.offer_price||80).toFixed(2)}</b></span><span className="vipOfferAction">DISCOVER VIP OFFER ↗</span></span><span className="vipOfferShimmer"/>
+    <span className="vipOfferContent"><span className="vipOfferFlag">✦ VIP LIMITED-TIME OFFER ✦</span><strong className="vipOfferTitle">{included.length?included.join(" + "):"Deep Cleansing + Back Massage"}</strong><span className="vipOfferDuration">{Number(offer.total_duration_minutes)||90} MINUTES OF CARE</span><span className="vipOfferPrice"><del>${Number(offer.original_price||140).toFixed(2)}</del><b>${Number(offer.offer_price||80).toFixed(2)}</b></span><span className="vipOfferAction">DISCOVER VIP OFFER ↗</span></span><span className="vipOfferShimmer"/>
   </a>;
 }
 
@@ -115,7 +115,7 @@ export default function ServicesClient({sections,initialSelection}){
     try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify(sel));}catch{}
   },[sel]);
 
-  useEffect(()=>{let dead=false;fetch("/api/offers",{cache:"no-store"}).then(r=>r.json()).then(j=>{if(dead)return;const match=(j.offers||[]).find(o=>Number(o.total_duration_minutes)===95&&Number(o.original_price)===140&&Number(o.offer_price)===80&&(o.services||[]).some(s=>s.name==="Deep Cleansing Facial")&&(o.services||[]).some(s=>s.name==="Back Massage"));setVipOffer(match||null);}).catch(()=>{});return()=>{dead=true};},[]);
+  useEffect(()=>{let dead=false;fetch("/api/offers",{cache:"no-store"}).then(r=>r.json()).then(j=>{if(dead)return;const match=(j.offers||[]).find(o=>Number(o.original_price)===140&&Number(o.offer_price)===80&&(o.services||[]).some(s=>s.name==="Deep Cleansing Facial")&&(o.services||[]).some(s=>s.name==="Back Massage"));setVipOffer(match||null);}).catch(()=>{});return()=>{dead=true};},[]);
 
   useEffect(()=>{
     let dead=false;
